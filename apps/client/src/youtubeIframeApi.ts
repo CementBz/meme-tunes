@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 let apiPromise: Promise<typeof YT> | null = null;
 
 export function loadYoutubeIframeApi(): Promise<typeof YT> {
