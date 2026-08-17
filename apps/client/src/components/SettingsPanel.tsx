@@ -60,6 +60,54 @@ export function SettingsPanel({ settings, isHost, onUpdate }: SettingsPanelProps
         </button>
       </div>
 
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "#ffffff" }}>
+        Meme-Quelle:
+        <button
+          type="button"
+          disabled={!isHost}
+          onClick={() => onUpdate({ memeSource: "giphy" })}
+          style={{ background: settings.memeSource === "giphy" ? "var(--accent)" : "var(--border)" }}
+        >
+          Giphy Bilder
+        </button>
+        <button
+          type="button"
+          disabled={!isHost}
+          onClick={() => onUpdate({ memeSource: "local" })}
+          style={{ background: settings.memeSource === "local" ? "var(--accent)" : "var(--border)" }}
+        >
+          Bessere
+        </button>
+        <button
+          type="button"
+          disabled={!isHost}
+          onClick={() => onUpdate({ memeSource: "uploads" })}
+          style={{ background: settings.memeSource === "uploads" ? "var(--accent)" : "var(--border)" }}
+        >
+          Eigene Bilder
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "#ffffff" }}>
+        Song-Vorschläge (nur bei Giphy Bilder):
+        <button
+          type="button"
+          disabled={!isHost}
+          onClick={() => onUpdate({ songHints: true })}
+          style={{ background: settings.songHints ? "var(--accent)" : "var(--border)" }}
+        >
+          An
+        </button>
+        <button
+          type="button"
+          disabled={!isHost}
+          onClick={() => onUpdate({ songHints: false })}
+          style={{ background: !settings.songHints ? "var(--accent)" : "var(--border)" }}
+        >
+          Aus
+        </button>
+      </div>
+
       {!isHost && <p style={{ fontSize: "0.8rem", color: "#ffffff" }}>Nur der Host kann die Einstellungen ändern.</p>}
     </div>
   );

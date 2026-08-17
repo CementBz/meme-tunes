@@ -6,6 +6,7 @@ import { loadYoutubeIframeApi } from "../youtubeIframeApi";
 import { OwnFilePicker } from "./OwnFilePicker";
 
 interface SongPickerProps {
+  songHints: YoutubeSearchResult[];
   onSubmit: (data: SongSubmission) => void;
 }
 
@@ -15,8 +16,8 @@ function formatTime(totalSeconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function SongPicker({ onSubmit }: SongPickerProps) {
-  const [mode, setMode] = useState<"youtube" | "upload">("youtube");
+export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
+  const [mode, setMode] = useState<"youtube" | "upload" | "hints">("youtube");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<YoutubeSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -94,9 +95,46 @@ export function SongPicker({ onSubmit }: SongPickerProps) {
         >
           Own Files
         </button>
+        {songHints.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMode("hints")}
+            disabled={mode === "hints"}
+            style={{ background: "#aa3bff", color: "#fff" }}
+          >
+            Vorschläge
+          </button>
+        )}
       </div>
 
       {mode === "upload" && <OwnFilePicker onSubmit={onSubmit} />}
+
+      {mode === "hints" && (
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {songHints.map((r) => (
+            <li key={r.videoId} style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
+              <img src={r.thumbnailUrl} alt="" width={60} />
+              <button
+                type="button"
+                onClick={() =>
+                  onSubmit({
+                    source: "youtube",
+                    videoId: r.videoId,
+                    fileUrl: null,
+                    title: r.title,
+                    channel: r.channel,
+                    thumbnailUrl: r.thumbnailUrl,
+                    startSeconds: 0,
+                  })
+                }
+                style={{ textAlign: "left", flex: 1 }}
+              >
+                {r.title} — {r.channel} ({formatTime(r.durationSeconds)})
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {mode === "youtube" && (
         <>

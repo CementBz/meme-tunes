@@ -8,7 +8,9 @@ export interface Player {
 
 export type LobbyPhase =
   | "waiting"
+  | "collecting_uploads"
   | "round_meme_reveal"
+  | "community_vote"
   | "round_submitting"
   | "round_playback"
   | "round_results"
@@ -43,12 +45,16 @@ export interface LeaderboardEntry {
   score: number;
 }
 
+export type MemeSourceType = "giphy" | "local" | "uploads";
+
 export interface LobbySettings {
   totalRounds: number;
   submitSeconds: number;
   memePickSeconds: number;
   playbackSeconds: number;
   anonymousVoting: boolean;
+  memeSource: MemeSourceType;
+  songHints: boolean;
 }
 
 export const DEFAULT_SETTINGS: LobbySettings = {
@@ -57,6 +63,8 @@ export const DEFAULT_SETTINGS: LobbySettings = {
   memePickSeconds: 15,
   playbackSeconds: 10,
   anonymousVoting: true,
+  memeSource: "uploads",
+  songHints: false,
 };
 
 export type NumericSettingKey = "totalRounds" | "submitSeconds" | "memePickSeconds" | "playbackSeconds";
@@ -72,6 +80,10 @@ export const PLAYBACK_PAUSE_SECONDS = 3;
 export const MIN_PLAYERS = 1;
 export const GAME_START_COUNTDOWN_SECONDS = 3;
 export const GAME_START_SILENCE_SECONDS = 2;
+export const UPLOAD_COLLECT_SECONDS = 30;
+export const MAX_UPLOADS_PER_PLAYER = 5;
+export const COMMUNITY_VOTE_OPTIONS_COUNT = 5;
+export const COMMUNITY_VOTE_SECONDS = 15;
 
 // Client -> Server events
 export interface ClientToServerEvents {
@@ -97,6 +109,10 @@ export interface ClientToServerEvents {
   }) => void;
   "submit-vote": (submissionId: string, vote: "up" | "down") => void;
   "leave-lobby": () => void;
+  "pause-game": () => void;
+  "resume-game": () => void;
+  "submit-meme-upload": (url: string) => void;
+  "submit-community-vote": (optionIndex: number) => void;
 }
 
 // Server -> Client events
@@ -104,6 +120,8 @@ export interface ServerToClientEvents {
   "lobby-updated": (players: Player[]) => void;
   "settings-updated": (settings: LobbySettings) => void;
   "game-starting": () => void;
+  "uploads-phase-started": (data: { deadlineTs: number }) => void;
+  "community-vote-started": (data: { roundNumber: number; options: string[]; voteDeadlineTs: number }) => void;
   "meme-pick-started": (data: {
     roundNumber: number;
     memeOptions: string[];
@@ -135,6 +153,15 @@ export interface ServerToClientEvents {
   "round-leaderboard": (entries: LeaderboardEntry[]) => void;
   "game-over": (finalLeaderboard: LeaderboardEntry[]) => void;
   "error-message": (message: string) => void;
+  "song-hints": (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => void;
+  "game-paused": () => void;
+  "game-resumed": () => void;
+  "deadline-updated": (data: {
+    pickDeadlineTs?: number;
+    submitDeadlineTs?: number;
+    voteDeadlineTs?: number;
+    uploadDeadlineTs?: number;
+  }) => void;
 }
 
 export interface YoutubeSearchResult {

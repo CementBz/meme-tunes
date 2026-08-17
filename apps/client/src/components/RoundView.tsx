@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import type { YoutubeSearchResult } from "@meme-tunes/shared";
 import type { SongSubmission } from "../types";
+import { MemeMedia } from "./MemeMedia";
 import { SongPicker } from "./SongPicker";
 
 interface RoundViewProps {
@@ -9,6 +11,8 @@ interface RoundViewProps {
   submitDeadlineTs: number;
   submissionsClosed: boolean;
   hasSubmitted: boolean;
+  paused: boolean;
+  songHints: YoutubeSearchResult[];
   onSubmit: (data: SongSubmission) => void;
 }
 
@@ -19,6 +23,8 @@ export function RoundView({
   submitDeadlineTs,
   submissionsClosed,
   hasSubmitted,
+  paused,
+  songHints,
   onSubmit,
 }: RoundViewProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
@@ -26,11 +32,12 @@ export function RoundView({
   );
 
   useEffect(() => {
+    if (paused) return;
     const interval = setInterval(() => {
       setRemainingSeconds(Math.max(0, Math.round((submitDeadlineTs - Date.now()) / 1000)));
     }, 250);
     return () => clearInterval(interval);
-  }, [submitDeadlineTs]);
+  }, [submitDeadlineTs, paused]);
 
   return (
     <section id="center">
@@ -48,16 +55,17 @@ export function RoundView({
         <h1>
           Runde {roundNumber} / {totalRounds}
         </h1>
-        <img src={memeUrl} alt="Meme der Runde" style={{ maxWidth: "55vw", maxHeight: "50vh" }} />
+        <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "55vw", maxHeight: "50vh" }} />
 
         {!submissionsClosed && <p>Verbleibende Zeit: {remainingSeconds}s</p>}
+        {paused && <p>⏸ Pausiert</p>}
 
         {submissionsClosed ? (
           <p>Einreichungen geschlossen – Wiedergabe folgt.</p>
         ) : hasSubmitted ? (
           <p>Song eingereicht ✅ Warte auf die anderen Spieler…</p>
         ) : (
-          <SongPicker onSubmit={onSubmit} />
+          <SongPicker songHints={songHints} onSubmit={onSubmit} />
         )}
       </div>
     </section>

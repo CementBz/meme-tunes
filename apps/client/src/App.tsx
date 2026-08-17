@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import type { LeaderboardEntry, LobbySettings, Player, SongSourceType } from "@meme-tunes/shared";
+import type { LeaderboardEntry, LobbySettings, Player, SongSourceType, YoutubeSearchResult } from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import { socket } from "./socket";
+import { CommunityVoteView } from "./components/CommunityVoteView";
 import { CountdownOverlay } from "./components/CountdownOverlay";
 import { GameOverView } from "./components/GameOverView";
 import { HomeScreen } from "./components/HomeScreen";
@@ -9,10 +10,13 @@ import { LeaderboardView } from "./components/LeaderboardView";
 import { LeaveButton } from "./components/LeaveButton";
 import { LobbyRoom } from "./components/LobbyRoom";
 import { MemePickView } from "./components/MemePickView";
+import { MemeUploadView } from "./components/MemeUploadView";
 import { HudScaleSlider } from "./components/HudScaleSlider";
 import { MusicPlayer } from "./components/MusicPlayer";
+import { PauseButton } from "./components/PauseButton";
 import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
+import { RulesPanel } from "./components/RulesPanel";
 import { RoundView } from "./components/RoundView";
 import { PlaybackView } from "./components/PlaybackView";
 import type { SongSubmission } from "./types";
@@ -30,6 +34,12 @@ interface RoundData {
   roundNumber: number;
   memeUrl: string;
   submitDeadlineTs: number;
+}
+
+interface CommunityVoteData {
+  roundNumber: number;
+  options: string[];
+  voteDeadlineTs: number;
 }
 
 interface NowPlaying {
@@ -72,6 +82,12 @@ function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameStarting, setGameStarting] = useState(false);
   const [musicOn, setMusicOn] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
+  const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
+  const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
+
+  const isHost = players.find((p) => p.id === myPlayerId)?.isHost ?? false;
 
   useEffect(() => {
     document.documentElement.style.setProperty("--hud-scale", String(hudScale));
@@ -84,6 +100,20 @@ function App() {
       setGameStarted(true);
       setGameStarting(true);
     };
+    const onUploadsPhaseStarted = (data: { deadlineTs: number }) => {
+      setGameStarting(false);
+      setUploadDeadlineTs(data.deadlineTs);
+      setRoundLeaderboard(null);
+    };
+    const onCommunityVoteStarted = (data: CommunityVoteData) => {
+      setGameStarting(false);
+      setUploadDeadlineTs(null);
+      setCommunityVoteData(data);
+      setRoundData(null);
+      setNowPlaying(null);
+      setSongResult(null);
+      setRoundLeaderboard(null);
+    };
     const onMemePickStarted = (data: MemePickData) => {
       setGameStarting(false);
       setMemePickData(data);
@@ -94,13 +124,20 @@ function App() {
     };
     const onRoundStarted = (data: RoundData) => {
       setMemePickData(null);
+      setCommunityVoteData(null);
+      setUploadDeadlineTs(null);
+      setMusicOn(true);
       setRoundData(data);
       setCurrentRoundNumber(data.roundNumber);
       setSubmissionsClosed(false);
       setHasSubmitted(false);
       setNowPlaying(null);
       setSongResult(null);
+      setSongHints([]);
       setVotedSubmissionIds(new Set());
+    };
+    const onSongHints = (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => {
+      setSongHints(data.hints);
     };
     const onSubmissionsClosed = () => setSubmissionsClosed(true);
     const onNowPlaying = (data: NowPlaying) => {
@@ -110,6 +147,8 @@ function App() {
     const onSongResults = (data: SongResult) => setSongResult(data);
     const onRoundLeaderboard = (entries: LeaderboardEntry[]) => {
       setNowPlaying(null);
+      setRoundData(null);
+      setSongResult(null);
       setRoundLeaderboard(entries);
     };
     const onGameOver = (entries: LeaderboardEntry[]) => {
@@ -117,31 +156,64 @@ function App() {
       setFinalLeaderboard(entries);
     };
     const onErrorMessage = (message: string) => setGameError(message);
+    const onGamePaused = () => setPaused(true);
+    const onGameResumed = () => setPaused(false);
+    const onDeadlineUpdated = (data: {
+      pickDeadlineTs?: number;
+      submitDeadlineTs?: number;
+      voteDeadlineTs?: number;
+      uploadDeadlineTs?: number;
+    }) => {
+      if (data.pickDeadlineTs !== undefined) {
+        setMemePickData((prev) => (prev ? { ...prev, pickDeadlineTs: data.pickDeadlineTs! } : prev));
+      }
+      if (data.submitDeadlineTs !== undefined) {
+        setRoundData((prev) => (prev ? { ...prev, submitDeadlineTs: data.submitDeadlineTs! } : prev));
+      }
+      if (data.voteDeadlineTs !== undefined) {
+        setCommunityVoteData((prev) => (prev ? { ...prev, voteDeadlineTs: data.voteDeadlineTs! } : prev));
+      }
+      if (data.uploadDeadlineTs !== undefined) {
+        setUploadDeadlineTs(data.uploadDeadlineTs);
+      }
+    };
 
     socket.on("lobby-updated", onLobbyUpdated);
     socket.on("settings-updated", onSettingsUpdated);
     socket.on("game-starting", onGameStarting);
+    socket.on("uploads-phase-started", onUploadsPhaseStarted);
+    socket.on("community-vote-started", onCommunityVoteStarted);
     socket.on("meme-pick-started", onMemePickStarted);
     socket.on("round-started", onRoundStarted);
+    socket.on("song-hints", onSongHints);
     socket.on("submissions-closed", onSubmissionsClosed);
     socket.on("now-playing", onNowPlaying);
     socket.on("song-results", onSongResults);
     socket.on("round-leaderboard", onRoundLeaderboard);
     socket.on("game-over", onGameOver);
     socket.on("error-message", onErrorMessage);
+    socket.on("game-paused", onGamePaused);
+    socket.on("game-resumed", onGameResumed);
+    socket.on("deadline-updated", onDeadlineUpdated);
 
     return () => {
       socket.off("lobby-updated", onLobbyUpdated);
       socket.off("settings-updated", onSettingsUpdated);
       socket.off("game-starting", onGameStarting);
+      socket.off("uploads-phase-started", onUploadsPhaseStarted);
+      socket.off("community-vote-started", onCommunityVoteStarted);
       socket.off("meme-pick-started", onMemePickStarted);
       socket.off("round-started", onRoundStarted);
+      socket.off("song-hints", onSongHints);
       socket.off("submissions-closed", onSubmissionsClosed);
       socket.off("now-playing", onNowPlaying);
       socket.off("song-results", onSongResults);
       socket.off("round-leaderboard", onRoundLeaderboard);
       socket.off("game-over", onGameOver);
       socket.off("error-message", onErrorMessage);
+      socket.off("game-paused", onGamePaused);
+      socket.off("game-resumed", onGameResumed);
+      socket.off("deadline-updated", onDeadlineUpdated);
     };
   }, []);
 
@@ -182,6 +254,18 @@ function App() {
     socket.emit("reroll-memes");
   };
 
+  const handleMemeUpload = (url: string) => {
+    socket.emit("submit-meme-upload", url);
+  };
+
+  const handleCommunityVote = (index: number) => {
+    socket.emit("submit-community-vote", index);
+  };
+
+  const handleTogglePause = () => {
+    socket.emit(paused ? "resume-game" : "pause-game");
+  };
+
   const handleSongSubmit = (data: SongSubmission) => {
     socket.emit("submit-song", data);
     setHasSubmitted(true);
@@ -210,6 +294,10 @@ function App() {
     setFinalLeaderboard(null);
     setGameStarted(false);
     setGameStarting(false);
+    setPaused(false);
+    setUploadDeadlineTs(null);
+    setCommunityVoteData(null);
+    setSongHints([]);
     setSettings(DEFAULT_SETTINGS);
   };
 
@@ -242,9 +330,24 @@ function App() {
           submitDeadlineTs={roundData.submitDeadlineTs}
           submissionsClosed={submissionsClosed}
           hasSubmitted={hasSubmitted}
+          paused={paused}
+          songHints={songHints}
           onSubmit={handleSongSubmit}
         />
       );
+    } else if (communityVoteData) {
+      screen = (
+        <CommunityVoteView
+          roundNumber={communityVoteData.roundNumber}
+          totalRounds={settings.totalRounds}
+          options={communityVoteData.options}
+          voteDeadlineTs={communityVoteData.voteDeadlineTs}
+          paused={paused}
+          onVote={handleCommunityVote}
+        />
+      );
+    } else if (uploadDeadlineTs !== null) {
+      screen = <MemeUploadView deadlineTs={uploadDeadlineTs} paused={paused} onUpload={handleMemeUpload} />;
     } else if (memePickData) {
       screen = (
         <MemePickView
@@ -255,6 +358,7 @@ function App() {
           pickerId={memePickData.pickerId}
           pickerName={memePickData.pickerName}
           myPlayerId={myPlayerId}
+          paused={paused}
           onPick={handleMemePick}
           onReroll={handleRerollMemes}
         />
@@ -289,14 +393,13 @@ function App() {
         onToggle={setMusicOn}
       />
       <RoundMusic playing={musicOn && Boolean(roundData) && !roundLeaderboard && !finalLeaderboard} />
+      <RulesPanel />
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
+      {lobbyCode && isHost && gameStarted && <PauseButton paused={paused} onToggle={handleTogglePause} />}
       {memePickData && (
         <PickerIndicator pickerName={memePickData.pickerName} isMe={memePickData.pickerId === myPlayerId} />
       )}
       {screen}
-      <p style={{ position: "fixed", bottom: 4, left: 8, fontSize: "0.7rem", opacity: 0.5 }}>
-        Musik: "Arcadia" von Kevin MacLeod (incompetech.com), lizenziert unter CC BY 4.0
-      </p>
       <HudScaleSlider value={hudScale} onChange={setHudScale} />
     </>
   );

@@ -1,5 +1,6 @@
 import type { LobbyPhase, LobbySettings, Player, Submission } from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
+import type { PausableTimer } from "./pausableTimer.js";
 
 export interface Lobby {
   code: string;
@@ -12,11 +13,17 @@ export interface Lobby {
   currentMemeUrl: string | null;
   currentMemeOptions: string[];
   currentPickerId: string | null;
-  memeVoteTimer: NodeJS.Timeout | null;
+  pickDeadlineTs: number | null;
   currentSubmissions: Submission[];
   submitDeadlineTs: number | null;
-  submitTimer: NodeJS.Timeout | null;
   currentVotingSubmissionId: string | null;
+  activeTimer: PausableTimer | null;
+  paused: boolean;
+  uploadsByPlayer: Map<string, string[]>;
+  uploadDeadlineTs: number | null;
+  communityVoteOptions: string[];
+  communityVotes: Map<string, number>;
+  voteDeadlineTs: number | null;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -45,11 +52,17 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     currentMemeUrl: null,
     currentMemeOptions: [],
     currentPickerId: null,
-    memeVoteTimer: null,
+    pickDeadlineTs: null,
     currentSubmissions: [],
     submitDeadlineTs: null,
-    submitTimer: null,
     currentVotingSubmissionId: null,
+    activeTimer: null,
+    paused: false,
+    uploadsByPlayer: new Map(),
+    uploadDeadlineTs: null,
+    communityVoteOptions: [],
+    communityVotes: new Map(),
+    voteDeadlineTs: null,
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { LobbySettings, Player } from "@meme-tunes/shared";
 import { MIN_PLAYERS } from "@meme-tunes/shared";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { DrawableBackground } from "./DrawableBackground";
+import { PhotoCollageBackground } from "./PhotoCollageBackground";
 import { SettingsPanel } from "./SettingsPanel";
 import { playSfx } from "../sfx";
 
@@ -28,6 +30,7 @@ export function LobbyRoom({
   const canStart = players.length >= MIN_PLAYERS;
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showStartConfirm, setShowStartConfirm] = useState(false);
 
   const handleCopyCode = () => {
     playSfx("/copy-code.wav");
@@ -37,24 +40,14 @@ export function LobbyRoom({
   };
 
   const handleStart = () => {
+    setShowStartConfirm(false);
     playSfx("/start-game.wav", 0.5);
     onStart();
   };
 
   return (
     <section id="center">
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundImage: "url(/bg-lobby.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: showSettings ? "blur(8px)" : "none",
-          transition: "filter 0.25s ease",
-          zIndex: -2,
-        }}
-      />
+      <PhotoCollageBackground blurred={showSettings} />
       <div
         style={{
           position: "fixed",
@@ -103,7 +96,7 @@ export function LobbyRoom({
 
         {isHost ? (
           <>
-            <button type="button" onClick={handleStart} disabled={!canStart}>
+            <button type="button" onClick={() => setShowStartConfirm(true)} disabled={!canStart}>
               Spiel starten
             </button>
             {!canStart && <p>Mindestens {MIN_PLAYERS} Spieler nötig.</p>}
@@ -114,6 +107,14 @@ export function LobbyRoom({
 
         {error && <p style={{ color: "crimson" }}>{error}</p>}
       </div>
+
+      {showStartConfirm && (
+        <ConfirmDialog
+          message="Möchtest du die Runde wirklich starten?"
+          onConfirm={handleStart}
+          onCancel={() => setShowStartConfirm(false)}
+        />
+      )}
     </section>
   );
 }

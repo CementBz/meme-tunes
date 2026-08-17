@@ -1,19 +1,30 @@
 import { useEffect, useState } from "react";
 import { GAME_START_COUNTDOWN_SECONDS } from "@meme-tunes/shared";
 
-function beep(frequency: number): void {
+function metronomeClick(): void {
   try {
     const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = frequency;
-    gain.gain.value = 0.2;
-    osc.connect(gain);
+    const filter = ctx.createBiquadFilter();
+
+    filter.type = "lowpass";
+    filter.frequency.value = 600;
+
+    osc.type = "triangle";
+    osc.frequency.value = 220;
+
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+    osc.connect(filter);
+    filter.connect(gain);
     gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+
+    osc.start(now);
+    osc.stop(now + 0.1);
     osc.onended = () => ctx.close();
   } catch {
     // AudioContext unavailable — countdown stays visual-only.
@@ -25,7 +36,7 @@ export function CountdownOverlay() {
 
   useEffect(() => {
     if (count <= 0) return;
-    beep(count === 1 ? 1046 : 784);
+    metronomeClick();
     const timer = setTimeout(() => setCount((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [count]);

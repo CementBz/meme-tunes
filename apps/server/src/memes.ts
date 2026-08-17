@@ -1,65 +1,79 @@
-const SEARCH_TERMS = ["meme", "funny meme", "classic meme", "relatable meme", "reaction meme"];
+import { readdir } from "node:fs/promises";
+import path from "node:path";
+
+const GIPHY_SEARCH_TERMS = ["meme", "funny meme", "classic meme", "relatable meme", "reaction meme"];
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-interface KlipyMemeItem {
-  file: {
-    md?: {
-      webp?: { url: string };
-      png?: { url: string };
-    };
+export const LOCAL_MEMES_DIR = process.env.LOCAL_MEMES_DIR ?? "D:\\.,.,Dokumente 2\\Claude\\meme-tunes\\MEMES";
+const LOCAL_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
+const LOCAL_MEDIA_EXTENSIONS = new Set([...LOCAL_IMAGE_EXTENSIONS, ".mp4", ".webm", ".mov"]);
+
+interface GiphyGif {
+  title: string;
+  images: {
+    original: { url: string };
+    downsized: { url: string };
   };
 }
 
-interface KlipySearchResponse {
-  result: boolean;
-  data: {
-    data: KlipyMemeItem[];
-  };
+interface GiphySearchResponse {
+  data: GiphyGif[];
 }
 
-let cachedPool: string[] = [];
-let cachedAt = 0;
+let giphyPool: string[] = [];
+let giphyCachedAt = 0;
+const giphyTitles = new Map<string, string>();
 
-async function fetchKlipyTerm(term: string): Promise<string[]> {
-  const appKey = process.env.KLIPY_API_KEY;
-  if (!appKey) throw new Error("KLIPY_API_KEY ist nicht gesetzt.");
+export function getGiphyTitle(url: string): string | null {
+  return giphyTitles.get(url) ?? null;
+}
 
-  const url = new URL(`https://api.klipy.com/api/v1/${appKey}/static-memes/search`);
+async function fetchGiphyTerm(term: string): Promise<string[]> {
+  const apiKey = process.env.GIPHY_API_KEY;
+  if (!apiKey) throw new Error("GIPHY_API_KEY ist nicht gesetzt.");
+
+  const url = new URL("https://api.giphy.com/v1/gifs/search");
+  url.searchParams.set("api_key", apiKey);
   url.searchParams.set("q", term);
-  url.searchParams.set("per_page", "50");
-  url.searchParams.set("customer_id", "meme-tunes-server");
-  url.searchParams.set("content_filter", "medium");
+  url.searchParams.set("limit", "25");
+  url.searchParams.set("rating", "pg-13");
+  url.searchParams.set("lang", "de");
 
   const res = await fetch(url);
   if (!res.ok) return [];
 
-  const data = (await res.json()) as KlipySearchResponse;
-  if (!data.result) return [];
-
-  return data.data.data.map((item) => item.file.md?.webp?.url ?? item.file.md?.png?.url).filter((url): url is string => Boolean(url));
+  const data = (await res.json()) as GiphySearchResponse;
+  const urls: string[] = [];
+  for (const gif of data.data) {
+    const gifUrl = gif.images.downsized.url ?? gif.images.original.url;
+    if (!gifUrl) continue;
+    urls.push(gifUrl);
+    if (gif.title) giphyTitles.set(gifUrl, gif.title);
+  }
+  return urls;
 }
 
-async function refreshPool(): Promise<void> {
-  const results = await Promise.allSettled(SEARCH_TERMS.map(fetchKlipyTerm));
+async function refreshGiphyPool(): Promise<void> {
+  const results = await Promise.allSettled(GIPHY_SEARCH_TERMS.map(fetchGiphyTerm));
   const urls = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   if (urls.length > 0) {
-    cachedPool = Array.from(new Set(urls));
-    cachedAt = Date.now();
+    giphyPool = Array.from(new Set(urls));
+    giphyCachedAt = Date.now();
   }
 }
 
-export async function getRandomMemes(usedUrls: Set<string>, count: number): Promise<string[]> {
-  if (cachedPool.length === 0 || Date.now() - cachedAt > CACHE_TTL_MS) {
-    await refreshPool();
+export async function getRandomGiphyMemes(usedUrls: Set<string>, count: number): Promise<string[]> {
+  if (giphyPool.length === 0 || Date.now() - giphyCachedAt > CACHE_TTL_MS) {
+    await refreshGiphyPool();
   }
 
-  let candidates = cachedPool.filter((url) => !usedUrls.has(url));
+  let candidates = giphyPool.filter((url) => !usedUrls.has(url));
   if (candidates.length < count) {
-    await refreshPool();
-    candidates = cachedPool.filter((url) => !usedUrls.has(url));
+    await refreshGiphyPool();
+    candidates = giphyPool.filter((url) => !usedUrls.has(url));
   }
   if (candidates.length < count) {
-    candidates = cachedPool; // fallback: allow repeats if pool exhausted
+    candidates = giphyPool; // fallback: allow repeats if pool exhausted
   }
   if (candidates.length === 0) {
     throw new Error("Kein Meme gefunden.");
@@ -67,4 +81,67 @@ export async function getRandomMemes(usedUrls: Set<string>, count: number): Prom
 
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+let localPool: string[] = [];
+let localCachedAt = 0;
+
+async function refreshLocalPool(): Promise<void> {
+  try {
+    const files = await readdir(LOCAL_MEMES_DIR);
+    localPool = files.filter((f) => LOCAL_MEDIA_EXTENSIONS.has(path.extname(f).toLowerCase()));
+    localCachedAt = Date.now();
+  } catch (err) {
+    console.error(`Konnte lokalen Meme-Ordner nicht lesen (${LOCAL_MEMES_DIR}):`, err);
+    localPool = [];
+  }
+}
+
+export async function getRandomLocalMemes(usedUrls: Set<string>, count: number): Promise<string[]> {
+  if (localPool.length === 0 || Date.now() - localCachedAt > CACHE_TTL_MS) {
+    await refreshLocalPool();
+  }
+
+  const toUrl = (filename: string) => `/local-memes/${encodeURIComponent(filename)}`;
+  let candidates = localPool.map(toUrl).filter((url) => !usedUrls.has(url));
+  if (candidates.length < count) {
+    await refreshLocalPool();
+    candidates = localPool.map(toUrl).filter((url) => !usedUrls.has(url));
+  }
+  if (candidates.length < count) {
+    candidates = localPool.map(toUrl); // fallback: allow repeats if pool exhausted
+  }
+  if (candidates.length === 0) {
+    throw new Error(`Keine lokalen Memes gefunden in ${LOCAL_MEMES_DIR}.`);
+  }
+
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+const BACKGROUND_LOCAL_RATIO = 0.7;
+
+export async function getBackgroundImagePool(count: number): Promise<string[]> {
+  if (localPool.length === 0 || Date.now() - localCachedAt > CACHE_TTL_MS) {
+    await refreshLocalPool();
+  }
+
+  const localImages = localPool.filter((f) => LOCAL_IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()));
+  const localCount = Math.min(localImages.length, Math.round(count * BACKGROUND_LOCAL_RATIO));
+  const localUrls = [...localImages]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, localCount)
+    .map((filename) => `/local-memes/${encodeURIComponent(filename)}`);
+
+  const giphyCount = count - localUrls.length;
+  let giphyUrls: string[] = [];
+  if (giphyCount > 0) {
+    try {
+      giphyUrls = await getRandomGiphyMemes(new Set(), giphyCount);
+    } catch (err) {
+      console.error("Konnte Giphy-Bilder für den Hintergrundpool nicht laden:", err);
+    }
+  }
+
+  return [...localUrls, ...giphyUrls].sort(() => Math.random() - 0.5);
 }

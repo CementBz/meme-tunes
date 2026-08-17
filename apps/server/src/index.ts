@@ -15,8 +15,18 @@ const NUMERIC_SETTING_KEYS: NumericSettingKey[] = [
 ];
 import { createLobby, joinLobby, removePlayer, publicPlayers, getLobbyBySocket, connectedPlayers } from "./lobbyStore.js";
 import { searchYoutube } from "./youtube.js";
-import { startGame, tryCloseSubmissionsEarly, submitMemePick, rerollMemeOptions } from "./gameEngine.js";
+import {
+  startGame,
+  tryCloseSubmissionsEarly,
+  submitMemePick,
+  rerollMemeOptions,
+  pauseLobby,
+  resumeLobby,
+  submitMemeUpload,
+  submitCommunityVote,
+} from "./gameEngine.js";
 import { registerUploadRoute } from "./upload.js";
+import { LOCAL_MEMES_DIR, getBackgroundImagePool } from "./memes.js";
 
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
@@ -24,7 +34,18 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/image-pool", async (req, res) => {
+  const count = Math.min(60, Math.max(1, Number(req.query.count) || 30));
+  try {
+    const urls = await getBackgroundImagePool(count);
+    res.json({ urls });
+  } catch (err) {
+    console.error("Konnte Hintergrund-Bilderpool nicht laden:", err);
+    res.json({ urls: [] });
+  }
+});
 registerUploadRoute(app);
+app.use("/local-memes", express.static(LOCAL_MEMES_DIR));
 
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
@@ -43,6 +64,14 @@ function clampSettings(update: Partial<LobbySettings>): Partial<LobbySettings> {
 
   if (typeof update.anonymousVoting === "boolean") {
     clamped.anonymousVoting = update.anonymousVoting;
+  }
+
+  if (update.memeSource === "giphy" || update.memeSource === "local" || update.memeSource === "uploads") {
+    clamped.memeSource = update.memeSource;
+  }
+
+  if (typeof update.songHints === "boolean") {
+    clamped.songHints = update.songHints;
   }
 
   return clamped;
@@ -109,6 +138,18 @@ io.on("connection", (socket) => {
     rerollMemeOptions(io, lobby, socket.id);
   });
 
+  socket.on("submit-meme-upload", (url) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    submitMemeUpload(lobby, socket.id, url);
+  });
+
+  socket.on("submit-community-vote", (optionIndex) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    submitCommunityVote(io, lobby, socket.id, optionIndex);
+  });
+
   socket.on("submit-song", (submission) => {
     const lobby = getLobbyBySocket(socket.id);
     if (!lobby || lobby.phase !== "round_submitting") return;
@@ -149,6 +190,19 @@ io.on("connection", (socket) => {
     if (alreadyVoted) return;
 
     (vote === "up" ? submission.upVotes : submission.downVotes).push(socket.id);
+  });
+
+  socket.on("pause-game", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby || lobby.hostId !== socket.id) return;
+    if (lobby.phase === "waiting" || lobby.phase === "game_over") return;
+    pauseLobby(io, lobby);
+  });
+
+  socket.on("resume-game", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby || lobby.hostId !== socket.id) return;
+    resumeLobby(io, lobby);
   });
 
   socket.on("leave-lobby", () => {

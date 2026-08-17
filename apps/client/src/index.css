@@ -1,3 +1,33 @@
+@keyframes collage-scroll-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes collage-scroll-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.collage-scroll-up {
+  animation-name: collage-scroll-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.collage-scroll-down {
+  animation-name: collage-scroll-down;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -179,6 +209,15 @@ input[type="password"]:hover {
 
 input[type="text"]::placeholder {
   color: #3b4b4d;
+}
+
+input.flat-input[type="text"] {
+  background: #dcedf0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+input.flat-input[type="text"]:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 input[type="text"]:focus,

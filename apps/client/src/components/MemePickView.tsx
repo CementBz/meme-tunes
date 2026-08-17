@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MemeMedia } from "./MemeMedia";
 
 interface MemePickViewProps {
   roundNumber: number;
@@ -8,6 +9,7 @@ interface MemePickViewProps {
   pickerId: string;
   pickerName: string;
   myPlayerId: string;
+  paused: boolean;
   onPick: (index: number) => void;
   onReroll: () => void;
 }
@@ -20,6 +22,7 @@ export function MemePickView({
   pickerId,
   pickerName,
   myPlayerId,
+  paused,
   onPick,
   onReroll,
 }: MemePickViewProps) {
@@ -29,11 +32,12 @@ export function MemePickView({
   const isPicker = pickerId === myPlayerId;
 
   useEffect(() => {
+    if (paused) return;
     const interval = setInterval(() => {
       setRemainingSeconds(Math.max(0, Math.round((pickDeadlineTs - Date.now()) / 1000)));
     }, 250);
     return () => clearInterval(interval);
-  }, [pickDeadlineTs]);
+  }, [pickDeadlineTs, paused]);
 
   return (
     <section id="center">
@@ -42,6 +46,7 @@ export function MemePickView({
           Runde {roundNumber} / {totalRounds} — welches Meme?
         </h1>
         <p>Verbleibende Zeit: {remainingSeconds}s</p>
+        {paused && <p>⏸ Pausiert</p>}
         {!isPicker && <p>{pickerName} wählt gerade das Meme für alle…</p>}
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
@@ -53,8 +58,8 @@ export function MemePickView({
               disabled={!isPicker}
               style={{ padding: 0, background: "none", boxShadow: "none" }}
             >
-              <img
-                src={url}
+              <MemeMedia
+                url={url}
                 alt={`Meme-Option ${index + 1}`}
                 style={{
                   display: "block",

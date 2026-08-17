@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { SongSourceType } from "@meme-tunes/shared";
 import { loadYoutubeIframeApi } from "../youtubeIframeApi";
+import { MemeMedia } from "./MemeMedia";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
+const PLAYBACK_VOLUME = 0.8;
 
 interface PlaybackViewProps {
   submissionId: string;
@@ -56,6 +58,7 @@ export function PlaybackView({
         events: {
           onReady: (e) => {
             e.target.seekTo(startSeconds, true);
+            e.target.setVolume(PLAYBACK_VOLUME * 100);
             e.target.playVideo();
           },
         },
@@ -85,7 +88,7 @@ export function PlaybackView({
 
       <div className="hud-scale-content" style={{ position: "relative", zIndex: 1 }}>
         <h2>{playerName}s Song</h2>
-        <img src={memeUrl} alt="Meme der Runde" style={{ maxWidth: "85vw", maxHeight: "70vh", borderRadius: 0 }} />
+        <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "85vw", maxHeight: "70vh", borderRadius: 0 }} />
 
         {/* Audio only: the actual player stays invisible, only the meme image is shown. */}
         {source === "youtube" && <div ref={wrapperRef} style={{ width: 1, height: 1, overflow: "hidden" }} />}
@@ -95,6 +98,7 @@ export function PlaybackView({
             autoPlay
             onLoadedMetadata={(e) => {
               e.currentTarget.currentTime = startSeconds;
+              e.currentTarget.volume = PLAYBACK_VOLUME;
               e.currentTarget.play().catch(() => {});
             }}
             style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}

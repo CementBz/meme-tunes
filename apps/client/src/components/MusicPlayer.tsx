@@ -16,7 +16,6 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
   const [prankStep, setPrankStep] = useState(0);
   const [position, setPosition] = useState({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playCountRef = useRef(0);
   const stateRef = useRef({ musicOn, phaseAllowsMusic });
   stateRef.current = { musicOn, phaseAllowsMusic };
 
@@ -55,15 +54,6 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
     return () => document.removeEventListener("pointerdown", unlock);
   }, []);
 
-  const handleEnded = () => {
-    playCountRef.current += 1;
-    const audio = audioRef.current;
-    if (playCountRef.current < 2 && audio) {
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    }
-  };
-
   const handleClick = () => {
     if (!musicOn) {
       onToggle(true);
@@ -88,7 +78,7 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
 
   return (
     <>
-      <audio ref={audioRef} src="/arcadia.mp3" onEnded={handleEnded} />
+      <audio ref={audioRef} src="/background-music.wav" loop />
       <button
         type="button"
         onClick={handleClick}

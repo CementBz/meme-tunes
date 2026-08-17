@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { playSfx } from "../sfx";
+import { PhotoCollageBackground } from "./PhotoCollageBackground";
 
 interface HomeScreenProps {
   onCreate: (name: string) => void;
@@ -15,20 +16,12 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
 
   return (
     <section id="center">
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundImage: "url(/bg-home.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          zIndex: -2,
-        }}
-      />
+      <PhotoCollageBackground />
 
       <div className="hud-scale-content">
         <input
           type="text"
+          className="flat-input"
           placeholder="Dein Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -51,6 +44,7 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <input
             type="text"
+            className="flat-input"
             placeholder="Lobby-Code"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}

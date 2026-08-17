@@ -14,6 +14,10 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   "audio/x-wav": ".wav",
   "audio/wave": ".wav",
   "video/mp4": ".mp4",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
 };
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
@@ -29,7 +33,7 @@ const upload = multer({
     if (ALLOWED_MIME_TYPES[file.mimetype]) {
       cb(null, true);
     } else {
-      cb(new Error("Nur MP3-, WAV- oder MP4-Dateien sind erlaubt."));
+      cb(new Error("Nur MP3-, WAV-, MP4-, JPG-, PNG-, GIF- oder WebP-Dateien sind erlaubt."));
     }
   },
 });
