@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SongSourceType } from "@meme-tunes/shared";
 import { loadYoutubeIframeApi } from "../youtubeIframeApi";
 import { MemeMedia } from "./MemeMedia";
+import { ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
-const PLAYBACK_VOLUME = 0.8;
+const DEFAULT_VOLUME = 0.5;
 
 interface PlaybackViewProps {
   submissionId: string;
@@ -35,6 +36,8 @@ export function PlaybackView({
 }: PlaybackViewProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YT.Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
 
   useEffect(() => {
     if (source !== "youtube" || !videoId) return;
@@ -58,7 +61,7 @@ export function PlaybackView({
         events: {
           onReady: (e) => {
             e.target.seekTo(startSeconds, true);
-            e.target.setVolume(PLAYBACK_VOLUME * 100);
+            e.target.setVolume(volume * 100);
             e.target.playVideo();
           },
         },
@@ -72,6 +75,11 @@ export function PlaybackView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId, source, videoId]);
+
+  useEffect(() => {
+    playerRef.current?.setVolume(volume * 100);
+    if (videoRef.current) videoRef.current.volume = volume;
+  }, [volume]);
 
   return (
     <section id="center" style={{ position: "relative" }}>
@@ -94,24 +102,47 @@ export function PlaybackView({
         {source === "youtube" && <div ref={wrapperRef} style={{ width: 1, height: 1, overflow: "hidden" }} />}
         {source === "upload" && fileUrl && (
           <video
+            ref={videoRef}
             src={`${SERVER_URL}${fileUrl}`}
             autoPlay
             onLoadedMetadata={(e) => {
               e.currentTarget.currentTime = startSeconds;
-              e.currentTarget.volume = PLAYBACK_VOLUME;
+              e.currentTarget.volume = volume;
               e.currentTarget.play().catch(() => {});
             }}
             style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
           />
         )}
 
+        <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+          Lautstärke: {Math.round(volume * 100)}%
+          <input
+            type="range"
+            className="white-slider"
+            min={0}
+            max={1}
+            step={0.01}
+            value={volume}
+            onChange={(e) => setVolume(Number(e.target.value))}
+            style={{ width: "200px" }}
+          />
+        </label>
+
         {canVote && !hasVoted && (
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <button type="button" onClick={() => onVote("up")}>
-              👍
+          <div style={{ display: "flex", gap: "1.5rem" }}>
+            <button
+              type="button"
+              onClick={() => onVote("up")}
+              style={{ background: "none", boxShadow: "none", padding: "4px" }}
+            >
+              <ThumbUpIcon size={64} />
             </button>
-            <button type="button" onClick={() => onVote("down")}>
-              👎
+            <button
+              type="button"
+              onClick={() => onVote("down")}
+              style={{ background: "none", boxShadow: "none", padding: "4px" }}
+            >
+              <ThumbDownIcon size={64} />
             </button>
           </div>
         )}
@@ -120,8 +151,8 @@ export function PlaybackView({
         {canVote && hasVoted && !result && <p>Danke für deine Stimme!</p>}
         {result && (
           <>
-            <p>
-              👍 {result.upVotes} — 👎 {result.downVotes}
+            <p style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
+              <ThumbUpIcon size={28} /> {result.upVotes} — <ThumbDownIcon size={28} /> {result.downVotes}
             </p>
             {result.upVoterNames && result.upVoterNames.length > 0 && (
               <p>👍 {result.upVoterNames.join(", ")}</p>

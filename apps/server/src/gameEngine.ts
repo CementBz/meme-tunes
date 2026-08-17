@@ -192,10 +192,17 @@ function getCurrentPickerId(lobby: Lobby): string | null {
 
 async function beginMemePick(io: GameServer, lobby: Lobby, excludeExtra: Set<string> = new Set()): Promise<void> {
   const excluded = new Set([...lobby.usedMemeUrls, ...excludeExtra]);
-  const memeOptions =
-    lobby.settings.memeSource === "local"
-      ? await getRandomLocalMemes(excluded, MEME_OPTIONS_COUNT)
-      : await getRandomGiphyMemes(excluded, MEME_OPTIONS_COUNT);
+  let memeOptions: string[];
+  if (lobby.settings.memeSource === "local") {
+    try {
+      memeOptions = await getRandomLocalMemes(excluded, MEME_OPTIONS_COUNT);
+    } catch (err) {
+      console.error("Lokaler Meme-Ordner nicht verfügbar, Fallback auf Giphy:", err);
+      memeOptions = await getRandomGiphyMemes(excluded, MEME_OPTIONS_COUNT);
+    }
+  } else {
+    memeOptions = await getRandomGiphyMemes(excluded, MEME_OPTIONS_COUNT);
+  }
   lobby.currentMemeOptions = memeOptions;
 
   const pickerId = getCurrentPickerId(lobby);
