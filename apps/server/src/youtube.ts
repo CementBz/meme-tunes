@@ -34,7 +34,8 @@ export async function searchYoutube(query: string): Promise<YoutubeSearchResult[
 
   const searchRes = await fetch(searchUrl);
   if (!searchRes.ok) {
-    throw new Error(`YouTube-Suche fehlgeschlagen (${searchRes.status}).`);
+    const body = await searchRes.text().catch(() => "");
+    throw new Error(`YouTube-Suche fehlgeschlagen (${searchRes.status}): ${body}`);
   }
   const searchData = (await searchRes.json()) as { items: SearchListItem[] };
   const items = searchData.items.filter((item) => item.id?.videoId);
@@ -48,7 +49,8 @@ export async function searchYoutube(query: string): Promise<YoutubeSearchResult[
 
   const videosRes = await fetch(videosUrl);
   if (!videosRes.ok) {
-    throw new Error(`YouTube-Videoabfrage fehlgeschlagen (${videosRes.status}).`);
+    const body = await videosRes.text().catch(() => "");
+    throw new Error(`YouTube-Videoabfrage fehlgeschlagen (${videosRes.status}): ${body}`);
   }
   const videosData = (await videosRes.json()) as { items: VideosListItem[] };
   const durationById = new Map(videosData.items.map((v) => [v.id, parseIso8601Duration(v.contentDetails.duration)]));
