@@ -91,11 +91,18 @@ function beginUploadCollection(io: GameServer, lobby: Lobby): void {
 }
 
 export function submitMemeUpload(lobby: Lobby, socketId: string, url: string): void {
-  if (lobby.phase !== "collecting_uploads") return;
+  if (lobby.phase !== "collecting_uploads") {
+    console.log(`[submitMemeUpload] rejected: lobby ${lobby.code} phase is "${lobby.phase}", not "collecting_uploads"`);
+    return;
+  }
   if (!lobby.players.get(socketId)) return;
   const existing = lobby.uploadsByPlayer.get(socketId) ?? [];
-  if (existing.length >= MAX_UPLOADS_PER_PLAYER) return;
+  if (existing.length >= MAX_UPLOADS_PER_PLAYER) {
+    console.log(`[submitMemeUpload] rejected: ${socketId} already at max uploads`);
+    return;
+  }
   lobby.uploadsByPlayer.set(socketId, [...existing, url]);
+  console.log(`[submitMemeUpload] accepted "${url}" from ${socketId}, now has ${existing.length + 1} upload(s)`);
 }
 
 async function startRound(io: GameServer, lobby: Lobby): Promise<void> {

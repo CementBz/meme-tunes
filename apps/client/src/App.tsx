@@ -13,7 +13,6 @@ import { MemePickView } from "./components/MemePickView";
 import { MemeUploadView } from "./components/MemeUploadView";
 import { HudScaleSlider } from "./components/HudScaleSlider";
 import { MusicPlayer } from "./components/MusicPlayer";
-import { PauseButton } from "./components/PauseButton";
 import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
 import { RulesPanel } from "./components/RulesPanel";
@@ -86,8 +85,6 @@ function App() {
   const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
   const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
   const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
-
-  const isHost = players.find((p) => p.id === myPlayerId)?.isHost ?? false;
 
   useEffect(() => {
     document.documentElement.style.setProperty("--hud-scale", String(hudScale));
@@ -262,10 +259,6 @@ function App() {
     socket.emit("submit-community-vote", index);
   };
 
-  const handleTogglePause = () => {
-    socket.emit(paused ? "resume-game" : "pause-game");
-  };
-
   const handleSongSubmit = (data: SongSubmission) => {
     socket.emit("submit-song", data);
     setHasSubmitted(true);
@@ -395,7 +388,6 @@ function App() {
       <RoundMusic playing={musicOn && Boolean(roundData) && !roundLeaderboard && !finalLeaderboard} />
       <RulesPanel />
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
-      {lobbyCode && isHost && gameStarted && <PauseButton paused={paused} onToggle={handleTogglePause} />}
       {memePickData && (
         <PickerIndicator pickerName={memePickData.pickerName} isMe={memePickData.pickerId === myPlayerId} />
       )}

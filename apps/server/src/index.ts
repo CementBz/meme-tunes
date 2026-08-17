@@ -214,10 +214,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("search-songs", (query, ack) => {
+    console.log(`[search-songs] received query "${query}" from ${socket.id}`);
     searchYoutube(query)
-      .then((results) => ack(results))
+      .then((results) => {
+        console.log(`[search-songs] "${query}" -> ${results.length} results`);
+        ack(results);
+      })
       .catch((err) => {
-        console.error("YouTube search failed:", err);
+        console.error(`[search-songs] "${query}" failed:`, err);
         ack([]);
       });
   });
