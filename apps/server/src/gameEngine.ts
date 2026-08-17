@@ -123,9 +123,13 @@ function getUploadPool(lobby: Lobby): string[] {
 
 async function beginCommunityVote(io: GameServer, lobby: Lobby): Promise<void> {
   const pool = getUploadPool(lobby).filter((url) => !lobby.usedMemeUrls.has(url));
+  console.log(
+    `[beginCommunityVote] lobby ${lobby.code}: total uploads=${getUploadPool(lobby).length}, usable after filtering used=${pool.length}`
+  );
   let options = [...pool].sort(() => Math.random() - 0.5).slice(0, COMMUNITY_VOTE_OPTIONS_COUNT);
 
   if (options.length === 0) {
+    console.log(`[beginCommunityVote] pool empty, falling back to Giphy`);
     try {
       options = await getRandomGiphyMemes(lobby.usedMemeUrls, COMMUNITY_VOTE_OPTIONS_COUNT);
     } catch (err) {
