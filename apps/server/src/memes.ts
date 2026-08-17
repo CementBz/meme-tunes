@@ -4,7 +4,12 @@ import path from "node:path";
 const GIPHY_SEARCH_TERMS = ["meme", "funny meme", "classic meme", "relatable meme", "reaction meme"];
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-export const LOCAL_MEMES_DIR = process.env.LOCAL_MEMES_DIR ?? "D:\\.,.,Dokumente 2\\Claude\\meme-tunes\\MEMES";
+// apps/server is the cwd when run via `npm run <script> -w apps/server`, both
+// locally and on Render, so the repo root is two levels up from there. Using
+// a relative default (instead of a hardcoded Windows path) means this works
+// the same regardless of OS or deployment location.
+const REPO_ROOT = path.resolve(process.cwd(), "..", "..");
+export const LOCAL_MEMES_DIR = process.env.LOCAL_MEMES_DIR ?? path.join(REPO_ROOT, "MEMES");
 const LOCAL_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
 const LOCAL_MEDIA_EXTENSIONS = new Set([...LOCAL_IMAGE_EXTENSIONS, ".mp4", ".webm", ".mov"]);
 
