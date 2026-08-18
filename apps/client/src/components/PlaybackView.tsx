@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SongSourceType } from "@meme-tunes/shared";
 import { loadYoutubeIframeApi } from "../youtubeIframeApi";
 import { MemeMedia } from "./MemeMedia";
-import { ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
+import { MehIcon, ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
 const DEFAULT_VOLUME = 0.5;
@@ -20,8 +20,15 @@ interface PlaybackViewProps {
   memeUrl: string;
   canVote: boolean;
   hasVoted: boolean;
-  onVote: (vote: "up" | "down") => void;
-  result: { upVotes: number; downVotes: number; upVoterNames?: string[]; downVoterNames?: string[] } | null;
+  onVote: (vote: "up" | "down" | "meh") => void;
+  result: {
+    upVotes: number;
+    downVotes: number;
+    neutralVotes: number;
+    upVoterNames?: string[];
+    downVoterNames?: string[];
+    neutralVoterNames?: string[];
+  } | null;
 }
 
 export function PlaybackView({
@@ -176,6 +183,13 @@ export function PlaybackView({
             </button>
             <button
               type="button"
+              onClick={() => onVote("meh")}
+              style={{ background: "none", boxShadow: "none", padding: "4px" }}
+            >
+              <MehIcon size={52} />
+            </button>
+            <button
+              type="button"
               onClick={() => onVote("down")}
               style={{ background: "none", boxShadow: "none", padding: "4px" }}
             >
@@ -189,10 +203,14 @@ export function PlaybackView({
         {result && (
           <>
             <p style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
-              <ThumbUpIcon size={28} /> {result.upVotes} — <ThumbDownIcon size={28} /> {result.downVotes}
+              <ThumbUpIcon size={28} /> {result.upVotes} — <MehIcon size={24} /> {result.neutralVotes} —{" "}
+              <ThumbDownIcon size={28} /> {result.downVotes}
             </p>
             {result.upVoterNames && result.upVoterNames.length > 0 && (
               <p>👍 {result.upVoterNames.join(", ")}</p>
+            )}
+            {result.neutralVoterNames && result.neutralVoterNames.length > 0 && (
+              <p>😐 {result.neutralVoterNames.join(", ")}</p>
             )}
             {result.downVoterNames && result.downVoterNames.length > 0 && (
               <p>👎 {result.downVoterNames.join(", ")}</p>

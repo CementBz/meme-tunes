@@ -173,6 +173,7 @@ io.on("connection", (socket) => {
       startSeconds: submission.startSeconds,
       upVotes: [],
       downVotes: [],
+      neutralVotes: [],
     });
 
     tryCloseSubmissionsEarly(io, lobby);
@@ -186,10 +187,15 @@ io.on("connection", (socket) => {
     const submission = lobby.currentSubmissions.find((s) => s.id === submissionId);
     if (!submission || submission.playerId === socket.id) return;
 
-    const alreadyVoted = submission.upVotes.includes(socket.id) || submission.downVotes.includes(socket.id);
+    const alreadyVoted =
+      submission.upVotes.includes(socket.id) ||
+      submission.downVotes.includes(socket.id) ||
+      submission.neutralVotes.includes(socket.id);
     if (alreadyVoted) return;
 
-    (vote === "up" ? submission.upVotes : submission.downVotes).push(socket.id);
+    const targetList =
+      vote === "up" ? submission.upVotes : vote === "down" ? submission.downVotes : submission.neutralVotes;
+    targetList.push(socket.id);
   });
 
   socket.on("pause-game", () => {

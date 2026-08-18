@@ -354,11 +354,13 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
       submissionId: submission.id,
       upVotes: submission.upVotes.length,
       downVotes: submission.downVotes.length,
+      neutralVotes: submission.neutralVotes.length,
       ...(lobby.settings.anonymousVoting
         ? {}
         : {
             upVoterNames: submission.upVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
             downVoterNames: submission.downVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
+            neutralVoterNames: submission.neutralVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
           }),
     });
 

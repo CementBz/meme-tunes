@@ -56,8 +56,10 @@ interface SongResult {
   submissionId: string;
   upVotes: number;
   downVotes: number;
+  neutralVotes: number;
   upVoterNames?: string[];
   downVoterNames?: string[];
+  neutralVoterNames?: string[];
 }
 
 function App() {
@@ -264,7 +266,7 @@ function App() {
     setHasSubmitted(true);
   };
 
-  const handleVote = (vote: "up" | "down") => {
+  const handleVote = (vote: "up" | "down" | "meh") => {
     if (!nowPlaying) return;
     socket.emit("submit-vote", nowPlaying.submissionId, vote);
     setVotedSubmissionIds((prev) => new Set(prev).add(nowPlaying.submissionId));

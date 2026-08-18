@@ -31,6 +31,7 @@ export interface Submission {
   startSeconds: number;
   upVotes: string[];
   downVotes: string[];
+  neutralVotes: string[];
 }
 
 export interface RoundSummary {
@@ -107,7 +108,7 @@ export interface ClientToServerEvents {
     thumbnailUrl: string;
     startSeconds: number;
   }) => void;
-  "submit-vote": (submissionId: string, vote: "up" | "down") => void;
+  "submit-vote": (submissionId: string, vote: "up" | "down" | "meh") => void;
   "leave-lobby": () => void;
   "pause-game": () => void;
   "resume-game": () => void;
@@ -147,8 +148,10 @@ export interface ServerToClientEvents {
     submissionId: string;
     upVotes: number;
     downVotes: number;
+    neutralVotes: number;
     upVoterNames?: string[];
     downVoterNames?: string[];
+    neutralVoterNames?: string[];
   }) => void;
   "round-leaderboard": (entries: LeaderboardEntry[]) => void;
   "game-over": (finalLeaderboard: LeaderboardEntry[]) => void;

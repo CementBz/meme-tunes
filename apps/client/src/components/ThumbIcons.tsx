@@ -18,3 +18,14 @@ export function ThumbDownIcon({ size = 56, color = "#f87171" }: ThumbIconProps) 
     </svg>
   );
 }
+
+export function MehIcon({ size = 56, color = "#facc15" }: ThumbIconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="8.5" cy="9.5" r="1.15" fill={color} stroke="none" />
+      <circle cx="15.5" cy="9.5" r="1.15" fill={color} stroke="none" />
+      <line x1="8" y1="15" x2="16" y2="15" strokeLinecap="round" />
+    </svg>
+  );
+}
