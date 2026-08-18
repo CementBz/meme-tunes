@@ -408,19 +408,14 @@ function App() {
       )}
       {screen}
       <HudScaleSlider value={hudScale} onChange={setHudScale} />
-      <a
-        href="/privacy"
-        style={{
-          position: "fixed",
-          bottom: "8px",
-          right: "8px",
-          zIndex: 900,
-          color: "rgba(255,255,255,0.5)",
-          fontSize: "0.7rem",
-        }}
-      >
-        Datenschutz
-      </a>
+      <div style={{ position: "fixed", bottom: "8px", right: "8px", zIndex: 900, display: "flex", gap: "0.75rem" }}>
+        <a href="/privacy" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
+          Datenschutz
+        </a>
+        <a href="/terms" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
+          Nutzungsbedingungen
+        </a>
+      </div>
     </>
   );
 }
