@@ -2,6 +2,13 @@ import type { LobbyPhase, LobbySettings, Player, Submission } from "@meme-tunes/
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import type { PausableTimer } from "./pausableTimer.js";
 
+export interface ExtraTimeRequestState {
+  requesterIds: Set<string>;
+  voterIds: Set<string>;
+  timer: NodeJS.Timeout;
+  voteDeadlineTs: number;
+}
+
 export interface Lobby {
   code: string;
   players: Map<string, Player>;
@@ -25,6 +32,7 @@ export interface Lobby {
   communityVotes: Map<string, number>;
   voteDeadlineTs: number | null;
   fireVoteUsedBy: Set<string>;
+  extraTimeRequest: ExtraTimeRequestState | null;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -65,6 +73,7 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     communityVotes: new Map(),
     voteDeadlineTs: null,
     fireVoteUsedBy: new Set(),
+    extraTimeRequest: null,
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);
@@ -78,6 +87,68 @@ export function joinLobby(code: string, socketId: string, name: string): Lobby |
   const player: Player = { id: socketId, name, isHost: false, connected: true, score: 0 };
   lobby.players.set(socketId, player);
   socketToLobby.set(socketId, lobby.code);
+  return lobby;
+}
+
+// Re-keys a player's identity onto a fresh socket connection after a page
+// reload. Socket ids double as player ids throughout the game state, so
+// every collection that might reference the old id needs to be rewritten,
+// not just the players map.
+export function rejoinLobby(code: string, oldPlayerId: string, newSocketId: string): Lobby | { error: string } {
+  const lobby = lobbies.get(code.toUpperCase());
+  if (!lobby) return { error: "Lobby nicht gefunden." };
+
+  const player = lobby.players.get(oldPlayerId);
+  if (!player) return { error: "Spieler nicht mehr in der Lobby." };
+
+  if (oldPlayerId !== newSocketId) {
+    lobby.players.delete(oldPlayerId);
+    player.id = newSocketId;
+    lobby.players.set(newSocketId, player);
+
+    if (lobby.hostId === oldPlayerId) lobby.hostId = newSocketId;
+    if (lobby.currentPickerId === oldPlayerId) lobby.currentPickerId = newSocketId;
+
+    const swap = (id: string) => (id === oldPlayerId ? newSocketId : id);
+    for (const submission of lobby.currentSubmissions) {
+      if (submission.playerId === oldPlayerId) submission.playerId = newSocketId;
+      submission.upVotes = submission.upVotes.map(swap);
+      submission.downVotes = submission.downVotes.map(swap);
+      submission.neutralVotes = submission.neutralVotes.map(swap);
+      submission.fireVotes = submission.fireVotes.map(swap);
+    }
+
+    if (lobby.fireVoteUsedBy.has(oldPlayerId)) {
+      lobby.fireVoteUsedBy.delete(oldPlayerId);
+      lobby.fireVoteUsedBy.add(newSocketId);
+    }
+
+    if (lobby.uploadsByPlayer.has(oldPlayerId)) {
+      lobby.uploadsByPlayer.set(newSocketId, lobby.uploadsByPlayer.get(oldPlayerId)!);
+      lobby.uploadsByPlayer.delete(oldPlayerId);
+    }
+
+    if (lobby.communityVotes.has(oldPlayerId)) {
+      lobby.communityVotes.set(newSocketId, lobby.communityVotes.get(oldPlayerId)!);
+      lobby.communityVotes.delete(oldPlayerId);
+    }
+
+    if (lobby.extraTimeRequest) {
+      if (lobby.extraTimeRequest.requesterIds.has(oldPlayerId)) {
+        lobby.extraTimeRequest.requesterIds.delete(oldPlayerId);
+        lobby.extraTimeRequest.requesterIds.add(newSocketId);
+      }
+      if (lobby.extraTimeRequest.voterIds.has(oldPlayerId)) {
+        lobby.extraTimeRequest.voterIds.delete(oldPlayerId);
+        lobby.extraTimeRequest.voterIds.add(newSocketId);
+      }
+    }
+
+    socketToLobby.delete(oldPlayerId);
+  }
+
+  player.connected = true;
+  socketToLobby.set(newSocketId, lobby.code);
   return lobby;
 }
 

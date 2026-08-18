@@ -13,7 +13,15 @@ const NUMERIC_SETTING_KEYS: NumericSettingKey[] = [
   "memePickSeconds",
   "playbackSeconds",
 ];
-import { createLobby, joinLobby, removePlayer, publicPlayers, getLobbyBySocket, connectedPlayers } from "./lobbyStore.js";
+import {
+  createLobby,
+  joinLobby,
+  removePlayer,
+  publicPlayers,
+  getLobbyBySocket,
+  connectedPlayers,
+  rejoinLobby,
+} from "./lobbyStore.js";
 import { searchYoutube } from "./youtube.js";
 import { searchItunes } from "./itunes.js";
 import { searchDeezer } from "./deezer.js";
@@ -26,6 +34,9 @@ import {
   resumeLobby,
   submitMemeUpload,
   submitCommunityVote,
+  requestExtraTime,
+  voteExtraTime,
+  buildSnapshot,
 } from "./gameEngine.js";
 import { registerUploadRoute } from "./upload.js";
 import { LOCAL_MEMES_DIR, getBackgroundImagePool } from "./memes.js";
@@ -100,6 +111,18 @@ io.on("connection", (socket) => {
     ack({ ok: true, playerId: socket.id });
     io.to(result.code).emit("lobby-updated", publicPlayers(result));
     io.to(result.code).emit("settings-updated", result.settings);
+  });
+
+  socket.on("rejoin-lobby", (code, playerId, ack) => {
+    const result = rejoinLobby(code, playerId, socket.id);
+    if ("error" in result) {
+      ack({ ok: false, error: result.error });
+      return;
+    }
+    socket.join(result.code);
+    const snapshot = buildSnapshot(result, socket.id);
+    ack({ ok: true, playerId: socket.id, snapshot });
+    io.to(result.code).emit("lobby-updated", publicPlayers(result));
   });
 
   socket.on("update-settings", (update) => {
@@ -193,6 +216,18 @@ io.on("connection", (socket) => {
 
     submission.fireVotes.push(socket.id);
     lobby.fireVoteUsedBy.add(socket.id);
+  });
+
+  socket.on("request-extra-time", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    requestExtraTime(io, lobby, socket.id);
+  });
+
+  socket.on("vote-extra-time", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    voteExtraTime(io, lobby, socket.id);
   });
 
   socket.on("submit-vote", (submissionId, vote) => {

@@ -196,7 +196,7 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
 
           {selected && (
             <div style={{ marginTop: "1rem" }}>
-              <p>
+              <p style={{ fontSize: "0.8rem" }}>
                 {selected.title} — {selected.channel}
               </p>
               <div ref={wrapperRef} />
@@ -214,7 +214,7 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
                   />
                 </label>
               </div>
-              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", marginTop: "0.5rem" }}>
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", marginTop: "0.5rem", fontSize: "0.75rem" }}>
                 Vorhör-Lautstärke: {Math.round(previewVolume * 100)}%
                 <input
                   type="range"
@@ -260,7 +260,7 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
       {mode === "itunes" && (
         <PreviewTab
           source="itunes"
-          hint="Kostenlose Vorschau von Apple — jeder Treffer ist ein ca. 30-Sekunden-Ausschnitt, kein ganzer Song."
+          hint="Kostenlose Vorschau von Apple — jeder Treffer ist ein ca. 30-Sekunden-Ausschnitt, kein ganzer Song. Die Rundenzeit läuft beim Suchen weiter, also nicht endlos durchskippen."
           search={(q, ack) => socket.emit("search-itunes", q, ack)}
           previewVolume={previewVolume}
           onPreviewVolumeChange={setPreviewVolume}
@@ -271,7 +271,7 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
       {mode === "deezer" && (
         <PreviewTab
           source="deezer"
-          hint="Kostenlose Vorschau von Deezer — jeder Treffer ist ein ca. 30-Sekunden-Ausschnitt, kein ganzer Song."
+          hint="Kostenlose Vorschau von Deezer — jeder Treffer ist ein ca. 30-Sekunden-Ausschnitt, kein ganzer Song. Die Rundenzeit läuft beim Suchen weiter, also nicht endlos durchskippen."
           search={(q, ack) => socket.emit("search-deezer", q, ack)}
           previewVolume={previewVolume}
           onPreviewVolumeChange={setPreviewVolume}

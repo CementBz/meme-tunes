@@ -90,7 +90,7 @@ export function PreviewTab({ source, hint, search, previewVolume, onPreviewVolum
 
       {selected && (
         <div style={{ marginTop: "1rem" }}>
-          <p>
+          <p style={{ fontSize: "0.8rem" }}>
             {selected.title} — {selected.artist}
           </p>
           <audio
@@ -113,7 +113,7 @@ export function PreviewTab({ source, hint, search, previewVolume, onPreviewVolum
               />
             </label>
           </div>
-          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", marginTop: "0.5rem" }}>
+          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", marginTop: "0.5rem", fontSize: "0.75rem" }}>
             Vorhör-Lautstärke: {Math.round(previewVolume * 100)}%
             <input
               type="range"

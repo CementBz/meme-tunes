@@ -7,8 +7,11 @@ import {
   COMMUNITY_VOTE_OPTIONS_COUNT,
   COMMUNITY_VOTE_SECONDS,
   FIRE_VOTE_BONUS_POINTS,
+  EXTRA_TIME_SECONDS,
+  EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS,
+  EXTRA_TIME_VOTE_WINDOW_SECONDS,
 } from "@meme-tunes/shared";
-import type { Submission } from "@meme-tunes/shared";
+import type { GameSnapshot, Submission } from "@meme-tunes/shared";
 import type { Lobby } from "./lobbyStore.js";
 import { connectedPlayers, publicPlayers } from "./lobbyStore.js";
 import { getRandomGiphyMemes, getRandomLocalMemes, getGiphyTitle } from "./memes.js";
@@ -273,6 +276,7 @@ function proceedToSubmission(io: GameServer, lobby: Lobby, memeUrl: string): voi
   lobby.usedMemeUrls.add(memeUrl);
   lobby.currentMemeUrl = memeUrl;
   lobby.phase = "round_submitting";
+  cancelExtraTimeRequest(lobby);
 
   const submitDeadlineTs = Date.now() + lobby.settings.submitSeconds * 1000;
   lobby.submitDeadlineTs = submitDeadlineTs;
@@ -316,9 +320,92 @@ export function tryCloseSubmissionsEarly(io: GameServer, lobby: Lobby): void {
 function closeSubmissions(io: GameServer, lobby: Lobby): void {
   lobby.activeTimer?.cancel();
   lobby.activeTimer = null;
+  cancelExtraTimeRequest(lobby);
   lobby.phase = "round_playback";
   io.to(lobby.code).emit("submissions-closed");
   playSubmissions(io, lobby).catch((err) => console.error("Playback sequence failed:", err));
+}
+
+function cancelExtraTimeRequest(lobby: Lobby): void {
+  if (!lobby.extraTimeRequest) return;
+  clearTimeout(lobby.extraTimeRequest.timer);
+  lobby.extraTimeRequest = null;
+}
+
+function extraTimeEligibleIds(lobby: Lobby): Set<string> {
+  if (!lobby.extraTimeRequest) return new Set();
+  const submittedIds = new Set(lobby.currentSubmissions.map((s) => s.playerId));
+  return new Set([...submittedIds, ...lobby.extraTimeRequest.requesterIds]);
+}
+
+function extraTimeYesIds(lobby: Lobby): Set<string> {
+  if (!lobby.extraTimeRequest) return new Set();
+  return new Set([...lobby.extraTimeRequest.requesterIds, ...lobby.extraTimeRequest.voterIds]);
+}
+
+function broadcastExtraTimeUpdate(io: GameServer, lobby: Lobby): void {
+  io.to(lobby.code).emit("extra-time-updated", {
+    yesVotes: extraTimeYesIds(lobby).size,
+    eligibleVoters: extraTimeEligibleIds(lobby).size,
+  });
+}
+
+export function requestExtraTime(io: GameServer, lobby: Lobby, socketId: string): void {
+  if (lobby.phase !== "round_submitting" || lobby.submitDeadlineTs === null) return;
+  const remaining = lobby.submitDeadlineTs - Date.now();
+  if (remaining > EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS * 1000) return;
+
+  const alreadySubmitted = lobby.currentSubmissions.some((s) => s.playerId === socketId);
+  if (alreadySubmitted) return;
+
+  if (lobby.extraTimeRequest) {
+    if (lobby.extraTimeRequest.requesterIds.has(socketId)) return;
+    lobby.extraTimeRequest.requesterIds.add(socketId);
+    broadcastExtraTimeUpdate(io, lobby);
+    return;
+  }
+
+  const voteDeadlineTs = Date.now() + EXTRA_TIME_VOTE_WINDOW_SECONDS * 1000;
+  const timer = setTimeout(() => resolveExtraTimeRequest(io, lobby), EXTRA_TIME_VOTE_WINDOW_SECONDS * 1000);
+  lobby.extraTimeRequest = {
+    requesterIds: new Set([socketId]),
+    voterIds: new Set(),
+    timer,
+    voteDeadlineTs,
+  };
+
+  io.to(lobby.code).emit("extra-time-started", {
+    voteDeadlineTs,
+    yesVotes: extraTimeYesIds(lobby).size,
+    eligibleVoters: extraTimeEligibleIds(lobby).size,
+  });
+}
+
+export function voteExtraTime(io: GameServer, lobby: Lobby, socketId: string): void {
+  if (lobby.phase !== "round_submitting" || !lobby.extraTimeRequest) return;
+  const alreadySubmitted = lobby.currentSubmissions.some((s) => s.playerId === socketId);
+  if (!alreadySubmitted) return;
+  if (lobby.extraTimeRequest.voterIds.has(socketId)) return;
+
+  lobby.extraTimeRequest.voterIds.add(socketId);
+  broadcastExtraTimeUpdate(io, lobby);
+}
+
+function resolveExtraTimeRequest(io: GameServer, lobby: Lobby): void {
+  if (!lobby.extraTimeRequest) return;
+
+  const eligible = extraTimeEligibleIds(lobby);
+  const yes = extraTimeYesIds(lobby);
+  const granted = eligible.size > 0 && yes.size * 2 > eligible.size;
+  lobby.extraTimeRequest = null;
+
+  if (granted && lobby.phase === "round_submitting" && lobby.submitDeadlineTs !== null) {
+    lobby.activeTimer?.extend(EXTRA_TIME_SECONDS * 1000);
+    lobby.submitDeadlineTs += EXTRA_TIME_SECONDS * 1000;
+    io.to(lobby.code).emit("deadline-updated", { submitDeadlineTs: lobby.submitDeadlineTs });
+  }
+
+  io.to(lobby.code).emit("extra-time-resolved", { granted });
 }
 
 function shuffled(submissions: Submission[]): Submission[] {
@@ -401,4 +488,111 @@ function finishRound(io: GameServer, lobby: Lobby): void {
       startRound(io, lobby).catch((err) => console.error("Failed to start next round:", err));
     }
   });
+}
+
+// Rebuilds everything a freshly (re)connected client needs to jump straight
+// back into whatever screen the rest of the lobby is currently on, since a
+// page reload wipes all client-side React state.
+export function buildSnapshot(lobby: Lobby, playerId: string): GameSnapshot {
+  const hasSubmitted = lobby.currentSubmissions.some((s) => s.playerId === playerId);
+  const submissionsClosed = lobby.phase === "round_playback" || lobby.phase === "round_results";
+
+  let memePickData: GameSnapshot["memePickData"] = null;
+  if (lobby.phase === "round_meme_reveal" && lobby.pickDeadlineTs !== null) {
+    const picker = lobby.currentPickerId ? lobby.players.get(lobby.currentPickerId) : undefined;
+    memePickData = {
+      roundNumber: lobby.currentRoundNumber,
+      memeOptions: lobby.currentMemeOptions,
+      pickDeadlineTs: lobby.pickDeadlineTs,
+      pickerId: lobby.currentPickerId ?? "",
+      pickerName: picker?.name ?? "?",
+    };
+  }
+
+  let roundData: GameSnapshot["roundData"] = null;
+  if (
+    (lobby.phase === "round_submitting" || lobby.phase === "round_playback") &&
+    lobby.currentMemeUrl &&
+    lobby.submitDeadlineTs !== null
+  ) {
+    roundData = {
+      roundNumber: lobby.currentRoundNumber,
+      memeUrl: lobby.currentMemeUrl,
+      submitDeadlineTs: lobby.submitDeadlineTs,
+    };
+  }
+
+  let communityVoteData: GameSnapshot["communityVoteData"] = null;
+  if (lobby.phase === "community_vote" && lobby.voteDeadlineTs !== null) {
+    communityVoteData = {
+      roundNumber: lobby.currentRoundNumber,
+      options: lobby.communityVoteOptions,
+      voteDeadlineTs: lobby.voteDeadlineTs,
+    };
+  }
+
+  let nowPlaying: GameSnapshot["nowPlaying"] = null;
+  const votedSubmissionIds: string[] = [];
+
+  if (lobby.phase === "round_playback") {
+    for (const s of lobby.currentSubmissions) {
+      if (s.upVotes.includes(playerId) || s.downVotes.includes(playerId) || s.neutralVotes.includes(playerId)) {
+        votedSubmissionIds.push(s.id);
+      }
+    }
+    const submission = lobby.currentVotingSubmissionId
+      ? lobby.currentSubmissions.find((s) => s.id === lobby.currentVotingSubmissionId)
+      : undefined;
+    if (submission) {
+      nowPlaying = {
+        submissionId: submission.id,
+        source: submission.source,
+        videoId: submission.videoId,
+        fileUrl: submission.fileUrl,
+        startSeconds: submission.startSeconds,
+        playerId: submission.playerId,
+        playerName: submission.playerName,
+        thumbnailUrl: submission.thumbnailUrl,
+      };
+    }
+  }
+
+  let extraTimeState: GameSnapshot["extraTimeState"] = null;
+  if (lobby.extraTimeRequest) {
+    extraTimeState = {
+      voteDeadlineTs: lobby.extraTimeRequest.voteDeadlineTs,
+      yesVotes: extraTimeYesIds(lobby).size,
+      eligibleVoters: extraTimeEligibleIds(lobby).size,
+    };
+  }
+
+  let roundLeaderboard: GameSnapshot["roundLeaderboard"] = null;
+  let finalLeaderboard: GameSnapshot["finalLeaderboard"] = null;
+  if (lobby.phase === "round_results" || lobby.phase === "game_over") {
+    const board = publicPlayers(lobby)
+      .map((p) => ({ playerId: p.id, name: p.name, score: p.score }))
+      .sort((a, b) => b.score - a.score);
+    if (lobby.phase === "game_over") finalLeaderboard = board;
+    else roundLeaderboard = board;
+  }
+
+  return {
+    phase: lobby.phase,
+    players: publicPlayers(lobby),
+    settings: lobby.settings,
+    paused: lobby.paused,
+    currentRoundNumber: lobby.currentRoundNumber,
+    memePickData,
+    roundData,
+    hasSubmitted,
+    submissionsClosed,
+    communityVoteData,
+    uploadDeadlineTs: lobby.phase === "collecting_uploads" ? lobby.uploadDeadlineTs : null,
+    nowPlaying,
+    votedSubmissionIds,
+    fireVoteUsed: lobby.fireVoteUsedBy.has(playerId),
+    extraTimeState,
+    roundLeaderboard,
+    finalLeaderboard,
+  };
 }

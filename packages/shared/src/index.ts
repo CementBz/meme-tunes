@@ -87,6 +87,9 @@ export const UPLOAD_COLLECT_SECONDS = 30;
 export const MAX_UPLOADS_PER_PLAYER = 5;
 export const COMMUNITY_VOTE_OPTIONS_COUNT = 5;
 export const COMMUNITY_VOTE_SECONDS = 15;
+export const EXTRA_TIME_SECONDS = 20;
+export const EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS = 20;
+export const EXTRA_TIME_VOTE_WINDOW_SECONDS = 7;
 
 // Client -> Server events
 export interface ClientToServerEvents {
@@ -97,6 +100,11 @@ export interface ClientToServerEvents {
     ack: (res: { ok: true; playerId: string } | { ok: false; error: string }) => void
   ) => void;
   "start-game": () => void;
+  "rejoin-lobby": (
+    code: string,
+    playerId: string,
+    ack: (res: { ok: true; playerId: string; snapshot: GameSnapshot } | { ok: false; error: string }) => void
+  ) => void;
   "update-settings": (settings: Partial<LobbySettings>) => void;
   "search-songs": (query: string, ack: (res: YoutubeSearchResult[]) => void) => void;
   "search-itunes": (query: string, ack: (res: PreviewSearchResult[]) => void) => void;
@@ -114,6 +122,8 @@ export interface ClientToServerEvents {
   }) => void;
   "submit-vote": (submissionId: string, vote: "up" | "down" | "meh") => void;
   "submit-fire-vote": (submissionId: string) => void;
+  "request-extra-time": () => void;
+  "vote-extra-time": () => void;
   "leave-lobby": () => void;
   "pause-game": () => void;
   "resume-game": () => void;
@@ -172,6 +182,44 @@ export interface ServerToClientEvents {
     voteDeadlineTs?: number;
     uploadDeadlineTs?: number;
   }) => void;
+  "extra-time-started": (data: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number }) => void;
+  "extra-time-updated": (data: { yesVotes: number; eligibleVoters: number }) => void;
+  "extra-time-resolved": (data: { granted: boolean }) => void;
+}
+
+export interface GameSnapshot {
+  phase: LobbyPhase;
+  players: Player[];
+  settings: LobbySettings;
+  paused: boolean;
+  currentRoundNumber: number;
+  memePickData: {
+    roundNumber: number;
+    memeOptions: string[];
+    pickDeadlineTs: number;
+    pickerId: string;
+    pickerName: string;
+  } | null;
+  roundData: { roundNumber: number; memeUrl: string; submitDeadlineTs: number } | null;
+  hasSubmitted: boolean;
+  submissionsClosed: boolean;
+  communityVoteData: { roundNumber: number; options: string[]; voteDeadlineTs: number } | null;
+  uploadDeadlineTs: number | null;
+  nowPlaying: {
+    submissionId: string;
+    source: SongSourceType;
+    videoId: string | null;
+    fileUrl: string | null;
+    startSeconds: number;
+    playerId: string;
+    playerName: string;
+    thumbnailUrl: string;
+  } | null;
+  votedSubmissionIds: string[];
+  fireVoteUsed: boolean;
+  extraTimeState: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number } | null;
+  roundLeaderboard: LeaderboardEntry[] | null;
+  finalLeaderboard: LeaderboardEntry[] | null;
 }
 
 export interface YoutubeSearchResult {

@@ -31,6 +31,13 @@ export class PausableTimer {
     this.handle = setTimeout(() => this.fire(), this.remainingMs);
   }
 
+  extend(ms: number): void {
+    const wasRunning = Boolean(this.handle);
+    if (wasRunning) this.pause();
+    this.remainingMs += ms;
+    if (wasRunning) this.resume();
+  }
+
   cancel(): void {
     if (this.handle) clearTimeout(this.handle);
     this.handle = null;

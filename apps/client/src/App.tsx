@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LeaderboardEntry, LobbySettings, Player, SongSourceType, YoutubeSearchResult } from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import { socket } from "./socket";
@@ -20,6 +20,34 @@ import { RoundView } from "./components/RoundView";
 import { PlaybackView } from "./components/PlaybackView";
 import type { SongSubmission } from "./types";
 import "./App.css";
+
+const SESSION_KEY = "meme-tunes-session";
+
+interface StoredSession {
+  code: string;
+  playerId: string;
+}
+
+function loadStoredSession(): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.code === "string" && typeof parsed?.playerId === "string") return parsed;
+  } catch {
+    // localStorage unavailable (private browsing etc.) — just skip persistence
+  }
+  return null;
+}
+
+function saveStoredSession(session: StoredSession | null): void {
+  try {
+    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 interface MemePickData {
   roundNumber: number;
@@ -91,10 +119,74 @@ function App() {
   const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
   const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
   const [fireVoteUsedThisRound, setFireVoteUsedThisRound] = useState(false);
+  const [reconnecting, setReconnecting] = useState(() => loadStoredSession() !== null);
+  const [extraTimeState, setExtraTimeState] = useState<{
+    voteDeadlineTs: number;
+    yesVotes: number;
+    eligibleVoters: number;
+  } | null>(null);
+  const [extraTimeResult, setExtraTimeResult] = useState<boolean | null>(null);
+  const [hasRequestedExtraTime, setHasRequestedExtraTime] = useState(false);
+  const [hasVotedExtraTime, setHasVotedExtraTime] = useState(false);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--hud-scale", String(hudScale));
   }, [hudScale]);
+
+  // A page reload wipes all client state, but the socket connection (and
+  // thus the player's slot in the lobby) is gone anyway by then — so on
+  // mount, try to resume the same lobby under the new socket id using the
+  // session persisted in localStorage, instead of dropping back to the
+  // home screen mid-game.
+  //
+  // rejoinAttemptedRef guards against React StrictMode's dev-only double
+  // effect invocation firing this twice: two concurrent rejoin requests
+  // would both read the same (stale) stored playerId, and whichever one
+  // the server processes second would fail with "player not found" (since
+  // the first request already re-keyed that id) and wipe the session that
+  // the first, successful request had just saved.
+  const rejoinAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (rejoinAttemptedRef.current) return;
+    rejoinAttemptedRef.current = true;
+
+    const stored = loadStoredSession();
+    if (!stored) return;
+
+    socket.emit("rejoin-lobby", stored.code, stored.playerId, (res) => {
+      if (!res.ok) {
+        saveStoredSession(null);
+        setReconnecting(false);
+        return;
+      }
+
+      const snapshot = res.snapshot;
+      saveStoredSession({ code: stored.code, playerId: res.playerId });
+      setLobbyCode(stored.code);
+      setMyPlayerId(res.playerId);
+
+      setPlayers(snapshot.players);
+      setSettings(snapshot.settings);
+      setPaused(snapshot.paused);
+      setCurrentRoundNumber(snapshot.currentRoundNumber);
+      setGameStarted(snapshot.phase !== "waiting");
+      setGameStarting(false);
+      setMemePickData(snapshot.memePickData);
+      setRoundData(snapshot.roundData);
+      setHasSubmitted(snapshot.hasSubmitted);
+      setSubmissionsClosed(snapshot.submissionsClosed);
+      setCommunityVoteData(snapshot.communityVoteData);
+      setUploadDeadlineTs(snapshot.uploadDeadlineTs);
+      setNowPlaying(snapshot.nowPlaying);
+      setVotedSubmissionIds(new Set(snapshot.votedSubmissionIds));
+      setFireVoteUsedThisRound(snapshot.fireVoteUsed);
+      setExtraTimeState(snapshot.extraTimeState);
+      setRoundLeaderboard(snapshot.roundLeaderboard);
+      setFinalLeaderboard(snapshot.finalLeaderboard);
+
+      setReconnecting(false);
+    });
+  }, []);
 
   useEffect(() => {
     const onLobbyUpdated = (updated: Player[]) => setPlayers(updated);
@@ -139,6 +231,10 @@ function App() {
       setSongHints([]);
       setVotedSubmissionIds(new Set());
       setFireVoteUsedThisRound(false);
+      setExtraTimeState(null);
+      setExtraTimeResult(null);
+      setHasRequestedExtraTime(false);
+      setHasVotedExtraTime(false);
     };
     const onSongHints = (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => {
       setSongHints(data.hints);
@@ -181,6 +277,20 @@ function App() {
         setUploadDeadlineTs(data.uploadDeadlineTs);
       }
     };
+    const onExtraTimeStarted = (data: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number }) => {
+      setExtraTimeState(data);
+      setExtraTimeResult(null);
+    };
+    const onExtraTimeUpdated = (data: { yesVotes: number; eligibleVoters: number }) => {
+      setExtraTimeState((prev) => (prev ? { ...prev, ...data } : prev));
+    };
+    const onExtraTimeResolved = (data: { granted: boolean }) => {
+      setExtraTimeState(null);
+      setExtraTimeResult(data.granted);
+      setHasRequestedExtraTime(false);
+      setHasVotedExtraTime(false);
+      setTimeout(() => setExtraTimeResult(null), 2500);
+    };
 
     socket.on("lobby-updated", onLobbyUpdated);
     socket.on("settings-updated", onSettingsUpdated);
@@ -199,6 +309,9 @@ function App() {
     socket.on("game-paused", onGamePaused);
     socket.on("game-resumed", onGameResumed);
     socket.on("deadline-updated", onDeadlineUpdated);
+    socket.on("extra-time-started", onExtraTimeStarted);
+    socket.on("extra-time-updated", onExtraTimeUpdated);
+    socket.on("extra-time-resolved", onExtraTimeResolved);
 
     return () => {
       socket.off("lobby-updated", onLobbyUpdated);
@@ -218,6 +331,9 @@ function App() {
       socket.off("game-paused", onGamePaused);
       socket.off("game-resumed", onGameResumed);
       socket.off("deadline-updated", onDeadlineUpdated);
+      socket.off("extra-time-started", onExtraTimeStarted);
+      socket.off("extra-time-updated", onExtraTimeUpdated);
+      socket.off("extra-time-resolved", onExtraTimeResolved);
     };
   }, []);
 
@@ -226,6 +342,7 @@ function App() {
     socket.emit("create-lobby", name, ({ code, playerId }) => {
       setLobbyCode(code);
       setMyPlayerId(playerId);
+      saveStoredSession({ code, playerId });
     });
   };
 
@@ -233,8 +350,10 @@ function App() {
     setError(null);
     socket.emit("join-lobby", code, name, (res) => {
       if (res.ok) {
-        setLobbyCode(code.toUpperCase());
+        const upperCode = code.toUpperCase();
+        setLobbyCode(upperCode);
         setMyPlayerId(res.playerId);
+        saveStoredSession({ code: upperCode, playerId: res.playerId });
       } else {
         setError(res.error);
       }
@@ -283,8 +402,21 @@ function App() {
     setFireVoteUsedThisRound(true);
   };
 
+  const handleRequestExtraTime = () => {
+    if (hasRequestedExtraTime) return;
+    socket.emit("request-extra-time");
+    setHasRequestedExtraTime(true);
+  };
+
+  const handleVoteExtraTime = () => {
+    if (hasVotedExtraTime) return;
+    socket.emit("vote-extra-time");
+    setHasVotedExtraTime(true);
+  };
+
   const handleLeaveLobby = () => {
     socket.emit("leave-lobby");
+    saveStoredSession(null);
     setLobbyCode(null);
     setMyPlayerId(null);
     setPlayers([]);
@@ -305,11 +437,23 @@ function App() {
     setCommunityVoteData(null);
     setSongHints([]);
     setFireVoteUsedThisRound(false);
+    setExtraTimeState(null);
+    setExtraTimeResult(null);
+    setHasRequestedExtraTime(false);
+    setHasVotedExtraTime(false);
     setSettings(DEFAULT_SETTINGS);
   };
 
   let screen;
-  if (lobbyCode && myPlayerId) {
+  if (reconnecting) {
+    screen = (
+      <section id="center">
+        <div className="hud-scale-content">
+          <p>Verbinde erneut…</p>
+        </div>
+      </section>
+    );
+  } else if (lobbyCode && myPlayerId) {
     if (finalLeaderboard) {
       screen = <GameOverView entries={finalLeaderboard} />;
     } else if (nowPlaying) {
@@ -342,6 +486,12 @@ function App() {
           paused={paused}
           songHints={songHints}
           onSubmit={handleSongSubmit}
+          extraTimeState={extraTimeState}
+          extraTimeResult={extraTimeResult}
+          hasRequestedExtraTime={hasRequestedExtraTime}
+          hasVotedExtraTime={hasVotedExtraTime}
+          onRequestExtraTime={handleRequestExtraTime}
+          onVoteExtraTime={handleVoteExtraTime}
         />
       );
     } else if (communityVoteData) {
