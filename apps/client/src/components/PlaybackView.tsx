@@ -37,7 +37,18 @@ export function PlaybackView({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YT.Player | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const wantsToPlayRef = useRef(false);
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [started, setStarted] = useState(false);
+
+  // Mobile browsers (especially iOS) block audio/video playback that isn't
+  // triggered directly by a tap. Since now-playing arrives from the server
+  // on its own schedule (not a user gesture), we can't just autoplay — the
+  // "Song abspielen" button below is what actually starts playback.
+  useEffect(() => {
+    setStarted(false);
+    wantsToPlayRef.current = false;
+  }, [submissionId]);
 
   useEffect(() => {
     if (source !== "youtube" || !videoId) return;
@@ -57,12 +68,12 @@ export function PlaybackView({
         videoId,
         width: "1",
         height: "1",
-        playerVars: { start: Math.floor(startSeconds), autoplay: 1 },
+        playerVars: { start: Math.floor(startSeconds), autoplay: 0 },
         events: {
           onReady: (e) => {
             e.target.seekTo(startSeconds, true);
             e.target.setVolume(volume * 100);
-            e.target.playVideo();
+            if (wantsToPlayRef.current) e.target.playVideo();
           },
         },
       });
@@ -80,6 +91,13 @@ export function PlaybackView({
     playerRef.current?.setVolume(volume * 100);
     if (videoRef.current) videoRef.current.volume = volume;
   }, [volume]);
+
+  const handleStartPlayback = () => {
+    setStarted(true);
+    wantsToPlayRef.current = true;
+    playerRef.current?.playVideo();
+    videoRef.current?.play().catch(() => {});
+  };
 
   return (
     <section id="center" style={{ position: "relative" }}>
@@ -104,14 +122,23 @@ export function PlaybackView({
           <video
             ref={videoRef}
             src={`${SERVER_URL}${fileUrl}`}
-            autoPlay
             onLoadedMetadata={(e) => {
               e.currentTarget.currentTime = startSeconds;
               e.currentTarget.volume = volume;
-              e.currentTarget.play().catch(() => {});
+              if (wantsToPlayRef.current) e.currentTarget.play().catch(() => {});
             }}
             style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
           />
+        )}
+
+        {!started && (
+          <button
+            type="button"
+            onClick={handleStartPlayback}
+            style={{ fontSize: "1.3rem", padding: "16px 32px", background: "#4ade80", color: "#052e12" }}
+          >
+            ▶ Song abspielen
+          </button>
         )}
 
         <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
