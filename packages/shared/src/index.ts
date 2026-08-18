@@ -16,7 +16,7 @@ export type LobbyPhase =
   | "round_results"
   | "game_over";
 
-export type SongSourceType = "youtube" | "upload" | "itunes";
+export type SongSourceType = "youtube" | "upload" | "itunes" | "deezer";
 
 export interface Submission {
   id: string;
@@ -99,7 +99,8 @@ export interface ClientToServerEvents {
   "start-game": () => void;
   "update-settings": (settings: Partial<LobbySettings>) => void;
   "search-songs": (query: string, ack: (res: YoutubeSearchResult[]) => void) => void;
-  "search-itunes": (query: string, ack: (res: ItunesSearchResult[]) => void) => void;
+  "search-itunes": (query: string, ack: (res: PreviewSearchResult[]) => void) => void;
+  "search-deezer": (query: string, ack: (res: PreviewSearchResult[]) => void) => void;
   "submit-meme-pick": (memeIndex: number) => void;
   "reroll-memes": () => void;
   "submit-song": (submission: {
@@ -181,7 +182,7 @@ export interface YoutubeSearchResult {
   durationSeconds: number;
 }
 
-export interface ItunesSearchResult {
+export interface PreviewSearchResult {
   previewUrl: string;
   title: string;
   artist: string;

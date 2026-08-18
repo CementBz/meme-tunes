@@ -41,6 +41,16 @@ export function MemePickView({
 
   return (
     <section id="center">
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: "url(/bg-round.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          zIndex: -2,
+        }}
+      />
       <div className="hud-scale-content">
         <h1>
           Runde {roundNumber} / {totalRounds} — welches Meme?
@@ -74,8 +84,8 @@ export function MemePickView({
         </div>
 
         {isPicker && (
-          <button type="button" onClick={onReroll} style={{ background: "#D16666", color: "#1a0505" }}>
-            Change Meme
+          <button type="button" onClick={onReroll} className="pill-badge" style={{ background: "rgba(209, 102, 102, 0.85)", color: "#2b0a0a" }}>
+            🔄 Anderes Meme
           </button>
         )}
       </div>

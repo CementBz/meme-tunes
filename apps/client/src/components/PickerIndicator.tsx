@@ -17,6 +17,7 @@ export function PickerIndicator({ pickerName, isMe }: PickerIndicatorProps) {
 
   return (
     <div
+      className="pill-badge"
       style={{
         position: "fixed",
         top: "50%",
@@ -24,9 +25,9 @@ export function PickerIndicator({ pickerName, isMe }: PickerIndicatorProps) {
         transform: settled
           ? "translateY(-50%) translateX(0) scale(1)"
           : "translateY(-50%) translateX(-40vw) scale(1.8)",
-        background: "#D16666",
-        color: "#1a0505",
-        padding: settled ? "12px 16px" : "24px 32px",
+        background: "rgba(209, 102, 102, 0.85)",
+        color: "#2b0a0a",
+        padding: settled ? "10px 18px" : "20px 28px",
         fontWeight: 700,
         fontSize: settled ? "1rem" : "1.75rem",
         maxWidth: settled ? "160px" : "320px",

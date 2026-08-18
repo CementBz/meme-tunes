@@ -1,4 +1,4 @@
-import type { ItunesSearchResult } from "@meme-tunes/shared";
+import type { PreviewSearchResult } from "@meme-tunes/shared";
 
 interface ItunesResultItem {
   previewUrl?: string;
@@ -8,7 +8,7 @@ interface ItunesResultItem {
   trackTimeMillis?: number;
 }
 
-export async function searchItunes(query: string): Promise<ItunesSearchResult[]> {
+export async function searchItunes(query: string): Promise<PreviewSearchResult[]> {
   const url = new URL("https://itunes.apple.com/search");
   url.searchParams.set("term", query);
   url.searchParams.set("media", "music");

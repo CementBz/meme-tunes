@@ -43,6 +43,16 @@ export function CommunityVoteView({
 
   return (
     <section id="center">
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: "url(/bg-round.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          zIndex: -2,
+        }}
+      />
       <div className="hud-scale-content">
         <h1>
           Runde {roundNumber} / {totalRounds} — welches Bild?

@@ -1,5 +1,5 @@
 export interface SongSubmission {
-  source: "youtube" | "upload" | "itunes";
+  source: "youtube" | "upload" | "itunes" | "deezer";
   videoId: string | null;
   fileUrl: string | null;
   title: string;

@@ -88,7 +88,7 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
       <button
         type="button"
         onClick={handleClick}
-        className="music-toggle"
+        className="pill-badge"
         style={{
           position: "fixed",
           top: inGame ? "16px" : `${position.top}px`,
