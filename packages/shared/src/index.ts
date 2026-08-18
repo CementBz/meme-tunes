@@ -16,7 +16,7 @@ export type LobbyPhase =
   | "round_results"
   | "game_over";
 
-export type SongSourceType = "youtube" | "upload";
+export type SongSourceType = "youtube" | "upload" | "itunes";
 
 export interface Submission {
   id: string;
@@ -99,6 +99,7 @@ export interface ClientToServerEvents {
   "start-game": () => void;
   "update-settings": (settings: Partial<LobbySettings>) => void;
   "search-songs": (query: string, ack: (res: YoutubeSearchResult[]) => void) => void;
+  "search-itunes": (query: string, ack: (res: ItunesSearchResult[]) => void) => void;
   "submit-meme-pick": (memeIndex: number) => void;
   "reroll-memes": () => void;
   "submit-song": (submission: {
@@ -177,5 +178,13 @@ export interface YoutubeSearchResult {
   title: string;
   channel: string;
   thumbnailUrl: string;
+  durationSeconds: number;
+}
+
+export interface ItunesSearchResult {
+  previewUrl: string;
+  title: string;
+  artist: string;
+  artworkUrl: string;
   durationSeconds: number;
 }

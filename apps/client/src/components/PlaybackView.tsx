@@ -137,10 +137,10 @@ export function PlaybackView({
 
         {/* Audio only: the actual player stays invisible, only the meme image is shown. */}
         {source === "youtube" && <div ref={wrapperRef} style={{ width: 1, height: 1, overflow: "hidden" }} />}
-        {source === "upload" && fileUrl && (
+        {(source === "upload" || source === "itunes") && fileUrl && (
           <video
             ref={videoRef}
-            src={`${SERVER_URL}${fileUrl}`}
+            src={source === "itunes" ? fileUrl : `${SERVER_URL}${fileUrl}`}
             autoPlay
             onLoadedMetadata={(e) => {
               e.currentTarget.currentTime = startSeconds;

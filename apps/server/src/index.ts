@@ -15,6 +15,7 @@ const NUMERIC_SETTING_KEYS: NumericSettingKey[] = [
 ];
 import { createLobby, joinLobby, removePlayer, publicPlayers, getLobbyBySocket, connectedPlayers } from "./lobbyStore.js";
 import { searchYoutube } from "./youtube.js";
+import { searchItunes } from "./itunes.js";
 import {
   startGame,
   tryCloseSubmissionsEarly,
@@ -242,6 +243,19 @@ io.on("connection", (socket) => {
       })
       .catch((err) => {
         console.error(`[search-songs] "${query}" failed:`, err);
+        ack([]);
+      });
+  });
+
+  socket.on("search-itunes", (query, ack) => {
+    console.log(`[search-itunes] received query "${query}" from ${socket.id}`);
+    searchItunes(query)
+      .then((results) => {
+        console.log(`[search-itunes] "${query}" -> ${results.length} results`);
+        ack(results);
+      })
+      .catch((err) => {
+        console.error(`[search-itunes] "${query}" failed:`, err);
         ack([]);
       });
   });
