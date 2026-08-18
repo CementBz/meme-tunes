@@ -385,7 +385,7 @@ function App() {
         musicOn={musicOn}
         onToggle={setMusicOn}
       />
-      <RoundMusic playing={musicOn && Boolean(roundData) && !roundLeaderboard && !finalLeaderboard} />
+      <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
       <RulesPanel />
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
       {memePickData && (
