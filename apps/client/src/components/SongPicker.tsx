@@ -159,6 +159,24 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
             </button>
           </div>
 
+          {new URLSearchParams(window.location.search).get("debug") === "1" && !selected && (
+            <button
+              type="button"
+              onClick={() =>
+                handleSelect({
+                  videoId: "dQw4w9WgXcQ",
+                  title: "Never Gonna Give You Up",
+                  channel: "Rick Astley",
+                  thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+                  durationSeconds: 212,
+                })
+              }
+              style={{ marginTop: "0.5rem" }}
+            >
+              Debug: Vorschau ohne Suche
+            </button>
+          )}
+
           {results.length > 0 && !selected && (
             <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem" }}>
               {results.map((r) => (
