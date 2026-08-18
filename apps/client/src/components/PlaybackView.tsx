@@ -21,13 +21,17 @@ interface PlaybackViewProps {
   canVote: boolean;
   hasVoted: boolean;
   onVote: (vote: "up" | "down" | "meh") => void;
+  canFireVote: boolean;
+  onFireVote: () => void;
   result: {
     upVotes: number;
     downVotes: number;
     neutralVotes: number;
+    fireVotes: number;
     upVoterNames?: string[];
     downVoterNames?: string[];
     neutralVoterNames?: string[];
+    fireVoterNames?: string[];
   } | null;
 }
 
@@ -42,6 +46,8 @@ export function PlaybackView({
   canVote,
   hasVoted,
   onVote,
+  canFireVote,
+  onFireVote,
   result,
 }: PlaybackViewProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -198,13 +204,24 @@ export function PlaybackView({
           </div>
         )}
 
+        {canFireVote && (
+          <button
+            type="button"
+            onClick={onFireVote}
+            title="Extra-Punkte für diesen Song — einmal pro Runde"
+            style={{ background: "#f97316", color: "#1a0505", fontSize: "1.1rem", padding: "8px 20px" }}
+          >
+            🔥 Extra-Punkte geben
+          </button>
+        )}
+
         {!canVote && <p>Das ist dein eigener Song — kein Voting für dich.</p>}
         {canVote && hasVoted && !result && <p>Danke für deine Stimme!</p>}
         {result && (
           <>
             <p style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
               <ThumbUpIcon size={28} /> {result.upVotes} — <MehIcon size={24} /> {result.neutralVotes} —{" "}
-              <ThumbDownIcon size={28} /> {result.downVotes}
+              <ThumbDownIcon size={28} /> {result.downVotes} — 🔥 {result.fireVotes}
             </p>
             {result.upVoterNames && result.upVoterNames.length > 0 && (
               <p>👍 {result.upVoterNames.join(", ")}</p>
@@ -214,6 +231,9 @@ export function PlaybackView({
             )}
             {result.downVoterNames && result.downVoterNames.length > 0 && (
               <p>👎 {result.downVoterNames.join(", ")}</p>
+            )}
+            {result.fireVoterNames && result.fireVoterNames.length > 0 && (
+              <p>🔥 {result.fireVoterNames.join(", ")}</p>
             )}
           </>
         )}

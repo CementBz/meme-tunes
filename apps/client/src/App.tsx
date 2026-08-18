@@ -57,9 +57,11 @@ interface SongResult {
   upVotes: number;
   downVotes: number;
   neutralVotes: number;
+  fireVotes: number;
   upVoterNames?: string[];
   downVoterNames?: string[];
   neutralVoterNames?: string[];
+  fireVoterNames?: string[];
 }
 
 function App() {
@@ -87,6 +89,7 @@ function App() {
   const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
   const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
   const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
+  const [fireVoteUsedThisRound, setFireVoteUsedThisRound] = useState(false);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--hud-scale", String(hudScale));
@@ -134,6 +137,7 @@ function App() {
       setSongResult(null);
       setSongHints([]);
       setVotedSubmissionIds(new Set());
+      setFireVoteUsedThisRound(false);
     };
     const onSongHints = (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => {
       setSongHints(data.hints);
@@ -272,6 +276,12 @@ function App() {
     setVotedSubmissionIds((prev) => new Set(prev).add(nowPlaying.submissionId));
   };
 
+  const handleFireVote = () => {
+    if (!nowPlaying || fireVoteUsedThisRound) return;
+    socket.emit("submit-fire-vote", nowPlaying.submissionId);
+    setFireVoteUsedThisRound(true);
+  };
+
   const handleLeaveLobby = () => {
     socket.emit("leave-lobby");
     setLobbyCode(null);
@@ -293,6 +303,7 @@ function App() {
     setUploadDeadlineTs(null);
     setCommunityVoteData(null);
     setSongHints([]);
+    setFireVoteUsedThisRound(false);
     setSettings(DEFAULT_SETTINGS);
   };
 
@@ -313,6 +324,8 @@ function App() {
           canVote={nowPlaying.playerId !== myPlayerId}
           hasVoted={votedSubmissionIds.has(nowPlaying.submissionId)}
           onVote={handleVote}
+          canFireVote={nowPlaying.playerId !== myPlayerId && !fireVoteUsedThisRound}
+          onFireVote={handleFireVote}
           result={songResult && songResult.submissionId === nowPlaying.submissionId ? songResult : null}
         />
       );

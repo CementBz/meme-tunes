@@ -76,6 +76,12 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
     setPosition({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
   };
 
+  // Once the game has started, the button sits in a fixed corner instead of
+  // top-center — centered screens (like the voting view) have their content
+  // vertically centered too, and can grow tall enough to collide with a
+  // top-center button. A static corner spot never overlaps that content.
+  const inGame = !phaseAllowsMusic;
+
   return (
     <>
       <audio ref={audioRef} src="/background-music.wav" loop />
@@ -84,9 +90,9 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
         onClick={handleClick}
         style={{
           position: "fixed",
-          top: `${position.top}px`,
-          left: "50%",
-          transform: `translateX(calc(-50% + ${position.offsetX}px))`,
+          top: inGame ? "16px" : `${position.top}px`,
+          left: inGame ? "16px" : "50%",
+          transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
           background: musicOn ? "#D16666" : "#80d39b",
           color: "#1a0505",
           zIndex: 1000,

@@ -24,6 +24,7 @@ export interface Lobby {
   communityVoteOptions: string[];
   communityVotes: Map<string, number>;
   voteDeadlineTs: number | null;
+  fireVoteUsedBy: Set<string>;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -63,6 +64,7 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     communityVoteOptions: [],
     communityVotes: new Map(),
     voteDeadlineTs: null,
+    fireVoteUsedBy: new Set(),
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);

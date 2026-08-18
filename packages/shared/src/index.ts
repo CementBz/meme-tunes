@@ -32,6 +32,7 @@ export interface Submission {
   upVotes: string[];
   downVotes: string[];
   neutralVotes: string[];
+  fireVotes: string[];
 }
 
 export interface RoundSummary {
@@ -77,6 +78,7 @@ export const SETTINGS_BOUNDS: Record<NumericSettingKey, { min: number; max: numb
   playbackSeconds: { min: 5, max: 30 },
 };
 
+export const FIRE_VOTE_BONUS_POINTS = 3;
 export const PLAYBACK_PAUSE_SECONDS = 3;
 export const MIN_PLAYERS = 1;
 export const GAME_START_COUNTDOWN_SECONDS = 3;
@@ -109,6 +111,7 @@ export interface ClientToServerEvents {
     startSeconds: number;
   }) => void;
   "submit-vote": (submissionId: string, vote: "up" | "down" | "meh") => void;
+  "submit-fire-vote": (submissionId: string) => void;
   "leave-lobby": () => void;
   "pause-game": () => void;
   "resume-game": () => void;
@@ -149,9 +152,11 @@ export interface ServerToClientEvents {
     upVotes: number;
     downVotes: number;
     neutralVotes: number;
+    fireVotes: number;
     upVoterNames?: string[];
     downVoterNames?: string[];
     neutralVoterNames?: string[];
+    fireVoterNames?: string[];
   }) => void;
   "round-leaderboard": (entries: LeaderboardEntry[]) => void;
   "game-over": (finalLeaderboard: LeaderboardEntry[]) => void;

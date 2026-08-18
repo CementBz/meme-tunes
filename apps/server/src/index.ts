@@ -174,9 +174,23 @@ io.on("connection", (socket) => {
       upVotes: [],
       downVotes: [],
       neutralVotes: [],
+      fireVotes: [],
     });
 
     tryCloseSubmissionsEarly(io, lobby);
+  });
+
+  socket.on("submit-fire-vote", (submissionId) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby || lobby.phase !== "round_playback") return;
+    if (lobby.currentVotingSubmissionId !== submissionId) return;
+    if (lobby.fireVoteUsedBy.has(socket.id)) return;
+
+    const submission = lobby.currentSubmissions.find((s) => s.id === submissionId);
+    if (!submission || submission.playerId === socket.id) return;
+
+    submission.fireVotes.push(socket.id);
+    lobby.fireVoteUsedBy.add(socket.id);
   });
 
   socket.on("submit-vote", (submissionId, vote) => {

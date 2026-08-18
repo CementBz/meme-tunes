@@ -6,6 +6,7 @@ import {
   MAX_UPLOADS_PER_PLAYER,
   COMMUNITY_VOTE_OPTIONS_COUNT,
   COMMUNITY_VOTE_SECONDS,
+  FIRE_VOTE_BONUS_POINTS,
 } from "@meme-tunes/shared";
 import type { Submission } from "@meme-tunes/shared";
 import type { Lobby } from "./lobbyStore.js";
@@ -112,6 +113,7 @@ export function submitMemeUpload(lobby: Lobby, socketId: string, url: string): v
 async function startRound(io: GameServer, lobby: Lobby): Promise<void> {
   lobby.currentRoundNumber += 1;
   lobby.currentSubmissions = [];
+  lobby.fireVoteUsedBy = new Set();
 
   if (lobby.settings.memeSource === "uploads") {
     await beginCommunityVote(io, lobby);
@@ -355,12 +357,14 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
       upVotes: submission.upVotes.length,
       downVotes: submission.downVotes.length,
       neutralVotes: submission.neutralVotes.length,
+      fireVotes: submission.fireVotes.length,
       ...(lobby.settings.anonymousVoting
         ? {}
         : {
             upVoterNames: submission.upVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
             downVoterNames: submission.downVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
             neutralVoterNames: submission.neutralVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
+            fireVoterNames: submission.fireVotes.map((id) => lobby.players.get(id)?.name ?? "?"),
           }),
     });
 
@@ -375,7 +379,10 @@ const ROUND_RESULTS_DISPLAY_MS = 15000;
 function finishRound(io: GameServer, lobby: Lobby): void {
   for (const submission of lobby.currentSubmissions) {
     const player = lobby.players.get(submission.playerId);
-    if (player) player.score += submission.upVotes.length - submission.downVotes.length;
+    if (player) {
+      player.score +=
+        submission.upVotes.length - submission.downVotes.length + submission.fireVotes.length * FIRE_VOTE_BONUS_POINTS;
+    }
   }
 
   lobby.phase = "round_results";

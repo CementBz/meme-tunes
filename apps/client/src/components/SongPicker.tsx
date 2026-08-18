@@ -23,6 +23,7 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<YoutubeSearchResult | null>(null);
   const [startSeconds, setStartSeconds] = useState(0);
+  const [previewVolume, setPreviewVolume] = useState(0.5);
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YT.Player | null>(null);
@@ -60,6 +61,9 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
         width: "320",
         height: "180",
         playerVars: { start: 0 },
+        events: {
+          onReady: (e) => e.target.setVolume(previewVolume * 100),
+        },
       });
     });
 
@@ -70,6 +74,10 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.videoId]);
+
+  useEffect(() => {
+    playerRef.current?.setVolume(previewVolume * 100);
+  }, [previewVolume]);
 
   const handlePreview = () => {
     const player = playerRef.current;
@@ -184,6 +192,19 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
                   />
                 </label>
               </div>
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", marginTop: "0.5rem" }}>
+                Vorhör-Lautstärke: {Math.round(previewVolume * 100)}%
+                <input
+                  type="range"
+                  className="white-slider"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={previewVolume}
+                  onChange={(e) => setPreviewVolume(Number(e.target.value))}
+                  style={{ width: "160px" }}
+                />
+              </label>
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
                 <button type="button" onClick={handlePreview}>
                   Vorhören

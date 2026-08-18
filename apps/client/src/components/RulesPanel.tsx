@@ -8,7 +8,7 @@ interface RuleSection {
 const RULE_SECTIONS: RuleSection[] = [
   {
     title: "Spielablauf",
-    text: "Jede Runde wird ein Meme gezeigt. Du suchst einen Song, den du als zum Bild passend empfindest, und legst den Startzeitpunkt fest. Alle Songs spielen nacheinander, jeder außer dem Einsender stimmt mit 👍/👎 ab. Nach allen Runden gibt's die Rangliste.",
+    text: "Jede Runde wird ein Meme gezeigt. Du suchst einen Song, den du als zum Bild passend empfindest, und legst den Startzeitpunkt fest. Alle Songs spielen nacheinander, jeder außer dem Einsender stimmt mit 👍/😐/👎 ab. Zusätzlich darf jede Person einmal pro Runde 🔥 vergeben und damit einem Song 3 Extra-Punkte geben. Nach allen Runden gibt's die Rangliste.",
   },
   {
     title: "Modus: Giphy Bilder",
