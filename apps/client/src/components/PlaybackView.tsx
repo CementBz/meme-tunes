@@ -6,6 +6,9 @@ import { ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
 const DEFAULT_VOLUME = 0.5;
+const AUTOPLAY_CHECK_DELAY_MS = 1000;
+
+type PlaybackState = "pending" | "playing" | "blocked";
 
 interface PlaybackViewProps {
   submissionId: string;
@@ -37,17 +40,15 @@ export function PlaybackView({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YT.Player | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const wantsToPlayRef = useRef(false);
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
-  const [started, setStarted] = useState(false);
+  // Autoplay is attempted first (works on desktop). Only if the browser
+  // actually blocks it (mobile browsers, especially iOS, block audio/video
+  // that isn't triggered by a direct tap) do we fall back to a manual
+  // "Song abspielen" button, so desktop players never see it.
+  const [playback, setPlayback] = useState<PlaybackState>("pending");
 
-  // Mobile browsers (especially iOS) block audio/video playback that isn't
-  // triggered directly by a tap. Since now-playing arrives from the server
-  // on its own schedule (not a user gesture), we can't just autoplay — the
-  // "Song abspielen" button below is what actually starts playback.
   useEffect(() => {
-    setStarted(false);
-    wantsToPlayRef.current = false;
+    setPlayback("pending");
   }, [submissionId]);
 
   useEffect(() => {
@@ -68,12 +69,18 @@ export function PlaybackView({
         videoId,
         width: "1",
         height: "1",
-        playerVars: { start: Math.floor(startSeconds), autoplay: 0 },
+        playerVars: { start: Math.floor(startSeconds), autoplay: 1 },
         events: {
           onReady: (e) => {
             e.target.seekTo(startSeconds, true);
             e.target.setVolume(volume * 100);
-            if (wantsToPlayRef.current) e.target.playVideo();
+            e.target.playVideo();
+            setTimeout(() => {
+              if (cancelled) return;
+              const state = playerRef.current?.getPlayerState();
+              // 1 = playing, 3 = buffering (about to play)
+              setPlayback(state === 1 || state === 3 ? "playing" : "blocked");
+            }, AUTOPLAY_CHECK_DELAY_MS);
           },
         },
       });
@@ -93,8 +100,7 @@ export function PlaybackView({
   }, [volume]);
 
   const handleStartPlayback = () => {
-    setStarted(true);
-    wantsToPlayRef.current = true;
+    setPlayback("playing");
     playerRef.current?.playVideo();
     videoRef.current?.play().catch(() => {});
   };
@@ -122,16 +128,20 @@ export function PlaybackView({
           <video
             ref={videoRef}
             src={`${SERVER_URL}${fileUrl}`}
+            autoPlay
             onLoadedMetadata={(e) => {
               e.currentTarget.currentTime = startSeconds;
               e.currentTarget.volume = volume;
-              if (wantsToPlayRef.current) e.currentTarget.play().catch(() => {});
+              e.currentTarget
+                .play()
+                .then(() => setPlayback("playing"))
+                .catch(() => setPlayback("blocked"));
             }}
             style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
           />
         )}
 
-        {!started && (
+        {playback === "blocked" && (
           <button
             type="button"
             onClick={handleStartPlayback}
