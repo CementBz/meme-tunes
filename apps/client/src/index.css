@@ -364,6 +364,42 @@ input[type="file"]::-webkit-file-upload-button:hover {
   filter: brightness(1.1);
 }
 
+.music-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.meme-option {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.meme-option:hover:not(:disabled) {
+  transform: scale(1.03);
+  filter: brightness(1.05);
+}
+
+.meme-option:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.meme-option:disabled {
+  background: none;
+  opacity: 1;
+  cursor: default;
+}
+
 .leaderboard-table {
   border-collapse: collapse;
   min-width: 320px;

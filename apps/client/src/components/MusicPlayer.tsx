@@ -88,18 +88,18 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
       <button
         type="button"
         onClick={handleClick}
+        className="music-toggle"
         style={{
           position: "fixed",
           top: inGame ? "16px" : `${position.top}px`,
           left: inGame ? "16px" : "50%",
           transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
-          background: musicOn ? "#D16666" : "#80d39b",
-          color: "#1a0505",
-          zIndex: 1000,
-          transition: "top 0.15s ease, transform 0.15s ease",
+          background: musicOn ? "rgba(209, 102, 102, 0.85)" : "rgba(255, 255, 255, 0.12)",
+          color: musicOn ? "#2b0a0a" : "#ffffff",
+          transition: "top 0.15s ease, transform 0.15s ease, background 0.2s ease",
         }}
       >
-        {musicOn ? "Musik aus" : "Musik ein"}
+        {musicOn ? "🔊 Musik aus" : "🔇 Musik ein"}
       </button>
     </>
   );

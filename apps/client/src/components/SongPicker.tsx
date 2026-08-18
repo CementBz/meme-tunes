@@ -95,21 +95,11 @@ export function SongPicker({ songHints, onSubmit }: SongPickerProps) {
         <button type="button" onClick={() => setMode("youtube")} disabled={mode === "youtube"}>
           YouTube
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("upload")}
-          disabled={mode === "upload"}
-          style={{ background: "#808080", color: "#fff" }}
-        >
+        <button type="button" onClick={() => setMode("upload")} disabled={mode === "upload"}>
           Own Files
         </button>
         {songHints.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setMode("hints")}
-            disabled={mode === "hints"}
-            style={{ background: "#aa3bff", color: "#fff" }}
-          >
+          <button type="button" onClick={() => setMode("hints")} disabled={mode === "hints"}>
             Vorschläge
           </button>
         )}

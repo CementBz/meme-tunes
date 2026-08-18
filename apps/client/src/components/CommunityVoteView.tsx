@@ -58,7 +58,7 @@ export function CommunityVoteView({
               type="button"
               onClick={() => handleVote(index)}
               disabled={votedIndex !== null}
-              style={{ padding: 0, background: "none", boxShadow: "none" }}
+              className="meme-option"
             >
               <MemeMedia
                 url={url}

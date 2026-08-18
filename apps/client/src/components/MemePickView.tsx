@@ -56,7 +56,7 @@ export function MemePickView({
               type="button"
               onClick={() => onPick(index)}
               disabled={!isPicker}
-              style={{ padding: 0, background: "none", boxShadow: "none" }}
+              className="meme-option"
             >
               <MemeMedia
                 url={url}
