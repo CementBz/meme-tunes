@@ -85,6 +85,7 @@ function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameStarting, setGameStarting] = useState(false);
   const [musicOn, setMusicOn] = useState(true);
+  const [prankEnabled, setPrankEnabled] = useState(true);
   const [paused, setPaused] = useState(false);
   const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
   const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
@@ -394,6 +395,12 @@ function App() {
 
   return (
     <>
+      <MusicPlayer
+        phaseAllowsMusic={!gameStarted}
+        prankEnabled={prankEnabled}
+        musicOn={musicOn}
+        onToggle={setMusicOn}
+      />
       <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
       <RulesPanel />
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
@@ -403,7 +410,13 @@ function App() {
       {screen}
       <HudScaleSlider value={hudScale} onChange={setHudScale} />
       <div style={{ position: "fixed", bottom: "8px", right: "8px", zIndex: 900, display: "flex", gap: "0.75rem" }}>
-        <MusicPlayer phaseAllowsMusic={!gameStarted} musicOn={musicOn} onToggle={setMusicOn} />
+        <button
+          type="button"
+          onClick={() => setPrankEnabled((v) => !v)}
+          style={{ background: "none", border: "none", boxShadow: "none", padding: 0, color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}
+        >
+          {prankEnabled ? "Musik-Prank aus" : "Musik-Prank an"}
+        </button>
         <a href="/privacy" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
           Datenschutz
         </a>
