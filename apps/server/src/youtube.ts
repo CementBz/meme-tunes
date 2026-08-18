@@ -1,6 +1,17 @@
 import type { YoutubeSearchResult } from "@meme-tunes/shared";
 
-const API_KEY = process.env.YOUTUBE_API_KEY;
+// Trim defensively: a stray trailing space/newline from copy-pasting the key
+// into a hosting provider's env var UI makes Google reject it as invalid,
+// even though the key itself is correct.
+const API_KEY = process.env.YOUTUBE_API_KEY?.trim();
+
+if (API_KEY) {
+  console.log(
+    `[youtube] API key loaded, length=${API_KEY.length}, starts="${API_KEY.slice(0, 6)}", ends="${API_KEY.slice(-4)}"`,
+  );
+} else {
+  console.error("[youtube] YOUTUBE_API_KEY is not set at startup.");
+}
 
 function parseIso8601Duration(duration: string): number {
   const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
