@@ -17,6 +17,10 @@ import { PausableTimer } from "./pausableTimer.js";
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 const MEME_OPTIONS_COUNT = 3;
+// Gives clients time to load/buffer the video/YouTube player before the
+// playbackSeconds countdown starts, so slow connections still get to hear
+// most of the song instead of it arriving right as voting closes.
+const PLAYBACK_LOAD_BUFFER_SECONDS = 2;
 
 function scheduleTimer(lobby: Lobby, ms: number, onDone: () => void): void {
   const timer = new PausableTimer(ms, () => {
@@ -339,6 +343,8 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
       thumbnailUrl: submission.thumbnailUrl,
       serverTs: Date.now(),
     });
+    await pausableDelay(lobby, PLAYBACK_LOAD_BUFFER_SECONDS * 1000);
+
     io.to(lobby.code).emit("voting-open", submission.id);
 
     await pausableDelay(lobby, lobby.settings.playbackSeconds * 1000);
