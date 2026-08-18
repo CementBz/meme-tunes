@@ -1,20 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface MusicPlayerProps {
   phaseAllowsMusic: boolean;
-  prankEnabled: boolean;
   musicOn: boolean;
   onToggle: (on: boolean) => void;
 }
 
-const PRANK_ATTEMPTS = 3;
-const BASE_TOP = 16;
-const BASE_OFFSET_X = 0;
 const VOLUME = 0.05;
 
-export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle }: MusicPlayerProps) {
-  const [prankStep, setPrankStep] = useState(0);
-  const [position, setPosition] = useState({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
+export function MusicPlayer({ phaseAllowsMusic, musicOn, onToggle }: MusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stateRef = useRef({ musicOn, phaseAllowsMusic });
   stateRef.current = { musicOn, phaseAllowsMusic };
@@ -54,50 +48,13 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
     return () => document.removeEventListener("pointerdown", unlock);
   }, []);
 
-  const handleClick = () => {
-    if (!musicOn) {
-      onToggle(true);
-      setPrankStep(0);
-      setPosition({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
-      return;
-    }
-
-    if (prankEnabled && prankStep < PRANK_ATTEMPTS) {
-      setPosition({
-        top: Math.max(8, BASE_TOP + Math.random() * 80),
-        offsetX: Math.random() * 260 - 130,
-      });
-      setPrankStep((n) => n + 1);
-      return;
-    }
-
-    onToggle(false);
-    setPrankStep(0);
-    setPosition({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
-  };
-
-  // Once the game has started, the button sits in a fixed corner instead of
-  // top-center — centered screens (like the voting view) have their content
-  // vertically centered too, and can grow tall enough to collide with a
-  // top-center button. A static corner spot never overlaps that content.
-  const inGame = !phaseAllowsMusic;
-
   return (
     <>
       <audio ref={audioRef} src="/background-music.wav" loop />
       <button
         type="button"
-        onClick={handleClick}
-        style={{
-          position: "fixed",
-          top: inGame ? "16px" : `${position.top}px`,
-          left: inGame ? "16px" : "50%",
-          transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
-          background: musicOn ? "#D16666" : "#80d39b",
-          color: "#1a0505",
-          zIndex: 1000,
-          transition: "top 0.15s ease, transform 0.15s ease",
-        }}
+        onClick={() => onToggle(!musicOn)}
+        style={{ background: "none", border: "none", boxShadow: "none", padding: 0, color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}
       >
         {musicOn ? "Musik aus" : "Musik ein"}
       </button>

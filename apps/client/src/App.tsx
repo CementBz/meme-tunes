@@ -394,12 +394,6 @@ function App() {
 
   return (
     <>
-      <MusicPlayer
-        phaseAllowsMusic={!gameStarted}
-        prankEnabled={!gameStarted}
-        musicOn={musicOn}
-        onToggle={setMusicOn}
-      />
       <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
       <RulesPanel />
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
@@ -409,6 +403,7 @@ function App() {
       {screen}
       <HudScaleSlider value={hudScale} onChange={setHudScale} />
       <div style={{ position: "fixed", bottom: "8px", right: "8px", zIndex: 900, display: "flex", gap: "0.75rem" }}>
+        <MusicPlayer phaseAllowsMusic={!gameStarted} musicOn={musicOn} onToggle={setMusicOn} />
         <a href="/privacy" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
           Datenschutz
         </a>
