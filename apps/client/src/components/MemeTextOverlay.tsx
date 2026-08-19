@@ -2,9 +2,10 @@ import { useState, type CSSProperties } from "react";
 
 interface MemeTextOverlayProps {
   text: string;
-  onTextChange: (t: string) => void;
+  onTextChange?: (t: string) => void;
   position: "top" | "bottom";
-  onPositionChange: (p: "top" | "bottom") => void;
+  onPositionChange?: (p: "top" | "bottom") => void;
+  readOnly?: boolean;
 }
 
 const TEXT_STYLE: CSSProperties = {
@@ -27,8 +28,10 @@ function fontSizeForText(text: string): string {
   return `clamp(0.8rem, ${vw}vw, 2.5rem)`;
 }
 
-export function MemeTextOverlay({ text, onTextChange, position, onPositionChange }: MemeTextOverlayProps) {
+export function MemeTextOverlay({ text, onTextChange, position, onPositionChange, readOnly = false }: MemeTextOverlayProps) {
   const [editing, setEditing] = useState(false);
+
+  if (readOnly && !text) return null;
 
   return (
     <div
@@ -44,7 +47,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
         zIndex: 5,
       }}
     >
-      {editing ? (
+      {editing && onTextChange ? (
         <input
           type="text"
           autoFocus
@@ -65,29 +68,31 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
         />
       ) : (
         <div
-          onClick={() => setEditing(true)}
+          onClick={readOnly ? undefined : () => setEditing(true)}
           style={{
             ...TEXT_STYLE,
             fontSize: fontSizeForText(text),
             opacity: text ? 1 : 0.55,
-            cursor: "text",
+            cursor: readOnly ? "default" : "text",
             textAlign: "center",
             maxHeight: "32%",
             overflow: "hidden",
           }}
         >
-          {text || "Text (optional)"}
+          {text || (readOnly ? "" : "Text (optional)")}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => onPositionChange(position === "top" ? "bottom" : "top")}
-        title="Position wechseln"
-        style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.7rem", padding: "4px 10px", boxShadow: "none" }}
-      >
-        {position === "top" ? "⬇️ Nach unten" : "⬆️ Nach oben"}
-      </button>
+      {!readOnly && onPositionChange && (
+        <button
+          type="button"
+          onClick={() => onPositionChange(position === "top" ? "bottom" : "top")}
+          title="Position wechseln"
+          style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.7rem", padding: "4px 10px", boxShadow: "none" }}
+        >
+          {position === "top" ? "⬇️ Nach unten" : "⬆️ Nach oben"}
+        </button>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { SongSourceType } from "@meme-tunes/shared";
 import { loadYoutubeIframeApi } from "../youtubeIframeApi";
 import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
+import { MemeTextOverlay } from "./MemeTextOverlay";
 import { MehIcon, ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
@@ -19,6 +20,8 @@ interface PlaybackViewProps {
   startSeconds: number;
   playerName: string;
   memeUrl: string;
+  memeText: string | null;
+  memeTextPosition: "top" | "bottom" | null;
   canVote: boolean;
   hasVoted: boolean;
   onVote: (vote: "up" | "down" | "meh") => void;
@@ -44,6 +47,8 @@ export function PlaybackView({
   startSeconds,
   playerName,
   memeUrl,
+  memeText,
+  memeTextPosition,
   canVote,
   hasVoted,
   onVote,
@@ -138,7 +143,12 @@ export function PlaybackView({
 
       <div className="hud-scale-content" style={{ position: "relative", zIndex: 1 }}>
         <h2>{playerName}s Song</h2>
-        <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "85vw", maxHeight: "70vh", borderRadius: 0 }} />
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "85vw", maxHeight: "70vh", borderRadius: 0, display: "block" }} />
+          {memeText && (
+            <MemeTextOverlay text={memeText} position={memeTextPosition ?? "bottom"} readOnly />
+          )}
+        </div>
 
         {/* Audio only: the actual player stays invisible, only the meme image is shown. */}
         {source === "youtube" && <div ref={wrapperRef} style={{ width: 1, height: 1, overflow: "hidden" }} />}

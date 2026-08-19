@@ -615,6 +615,8 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
       playerId: submission.playerId,
       playerName: submission.playerName,
       thumbnailUrl: submission.thumbnailUrl,
+      memeText: submission.memeText,
+      memeTextPosition: submission.memeTextPosition,
       serverTs: Date.now(),
     });
     await awaitAllReady(lobby);
@@ -766,6 +768,8 @@ export function buildSnapshot(lobby: Lobby, playerId: string): GameSnapshot {
         playerId: submission.playerId,
         playerName: submission.playerName,
         thumbnailUrl: submission.thumbnailUrl,
+        memeText: submission.memeText,
+        memeTextPosition: submission.memeTextPosition,
       };
     }
   }

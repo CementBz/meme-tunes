@@ -88,6 +88,8 @@ interface NowPlaying {
   playerId: string;
   playerName: string;
   thumbnailUrl: string;
+  memeText: string | null;
+  memeTextPosition: "top" | "bottom" | null;
 }
 
 interface SongResult {
@@ -100,6 +102,37 @@ interface SongResult {
   downVoterNames?: string[];
   neutralVoterNames?: string[];
   fireVoterNames?: string[];
+}
+
+// Keeps the phone's bottom edge flush with the browser window's bottom edge
+// (when one is on screen) instead of sitting at an arbitrary fixed offset.
+function useBrowserBottomOffset(): number {
+  const [offset, setOffset] = useState(16);
+
+  useEffect(() => {
+    const compute = () => {
+      const el = document.querySelector(".browser-window-outer");
+      if (!el) {
+        setOffset(16);
+        return;
+      }
+      const gap = window.innerHeight - el.getBoundingClientRect().bottom;
+      setOffset(Math.max(16, Math.round(gap)));
+    };
+    compute();
+    const resizeObserver = new ResizeObserver(compute);
+    const el = document.querySelector(".browser-window-outer");
+    if (el) resizeObserver.observe(el);
+    window.addEventListener("resize", compute);
+    const interval = setInterval(compute, 400);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", compute);
+      clearInterval(interval);
+    };
+  });
+
+  return offset;
 }
 
 function App() {
@@ -592,6 +625,8 @@ function App() {
           startSeconds={nowPlaying.startSeconds}
           playerName={nowPlaying.playerName}
           memeUrl={roundData?.memeUrl ?? ""}
+          memeText={nowPlaying.memeText}
+          memeTextPosition={nowPlaying.memeTextPosition}
           canVote={nowPlaying.playerId !== myPlayerId}
           hasVoted={votedSubmissionIds.has(nowPlaying.submissionId)}
           onVote={handleVote}
@@ -711,6 +746,7 @@ function App() {
     lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard && !showRoundEndOverlay && !nowPlaying && roundData
   );
   const showPhone = Boolean(lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard);
+  const phoneBottomOffset = useBrowserBottomOffset();
 
   return (
     <>
@@ -726,7 +762,7 @@ function App() {
       {!onLobbyRoomScreen && <RulesPanel />}
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
       {showPhone && (
-        <div style={{ position: "fixed", top: "90px", right: "16px", zIndex: 940 }}>
+        <div style={{ position: "fixed", bottom: `${phoneBottomOffset}px`, right: "16px", zIndex: 940 }}>
           <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} />
         </div>
       )}

@@ -186,6 +186,8 @@ export interface ServerToClientEvents {
     playerId: string;
     playerName: string;
     thumbnailUrl: string;
+    memeText: string | null;
+    memeTextPosition: "top" | "bottom" | null;
     serverTs: number;
   }) => void;
   "voting-open": (submissionId: string) => void;
@@ -251,6 +253,8 @@ export interface GameSnapshot {
     playerId: string;
     playerName: string;
     thumbnailUrl: string;
+    memeText: string | null;
+    memeTextPosition: "top" | "bottom" | null;
   } | null;
   votedSubmissionIds: string[];
   submittedPlayerIds: string[];

@@ -8,6 +8,16 @@ export interface BrowserTab {
   accentColor?: string;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+  const num = parseInt(full, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 interface BrowserWindowProps {
   tabs: BrowserTab[];
   defaultTabId?: string;
@@ -21,6 +31,7 @@ export function BrowserWindow({ tabs, defaultTabId, width = "min(92vw, 720px)" }
 
   return (
     <div
+      className="browser-window-outer"
       style={{
         width,
         maxWidth: "100%",
@@ -55,15 +66,21 @@ export function BrowserWindow({ tabs, defaultTabId, width = "min(92vw, 720px)" }
                   type="button"
                   onClick={() => setActiveId(tab.id)}
                   style={{
-                    background: isActive ? "#2c2c2e" : "#35363a",
-                    color: isActive ? "#f2f2f2" : "#c8c8c8",
+                    background: tab.accentColor
+                      ? isActive
+                        ? tab.accentColor
+                        : hexToRgba(tab.accentColor, 0.28)
+                      : isActive
+                        ? "#2c2c2e"
+                        : "#35363a",
+                    color: isActive ? "#ffffff" : "#e2e2e2",
                     borderRadius: "8px 8px 0 0",
                     padding: "8px 16px",
                     fontSize: "0.8rem",
                     fontWeight: isActive ? 700 : 500,
                     boxShadow: "none",
                     whiteSpace: "nowrap",
-                    borderTop: isActive && tab.accentColor ? `2px solid ${tab.accentColor}` : "2px solid transparent",
+                    textShadow: tab.accentColor ? "0 1px 2px rgba(0,0,0,0.35)" : "none",
                   }}
                 >
                   {tab.label}
@@ -79,7 +96,7 @@ export function BrowserWindow({ tabs, defaultTabId, width = "min(92vw, 720px)" }
           background: "#1c1c1e",
           color: "#f2f2f2",
           padding: "20px",
-          maxHeight: "min(52vh, 420px)",
+          height: "min(52vh, 420px)",
           overflowY: "auto",
         }}
       >
