@@ -21,7 +21,6 @@ import { MemePickView } from "./components/MemePickView";
 import { MemeUploadView } from "./components/MemeUploadView";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { OwnMemePickView } from "./components/OwnMemePickView";
-import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
 import { RulesPanel } from "./components/RulesPanel";
 import { RoundView } from "./components/RoundView";
@@ -143,6 +142,8 @@ function App() {
   const [gameError, setGameError] = useState<string | null>(null);
   const [settings, setSettings] = useState<LobbySettings>(DEFAULT_SETTINGS);
   const [memePickData, setMemePickData] = useState<MemePickData | null>(null);
+  const [pickerAnnounce, setPickerAnnounce] = useState<{ pickerId: string; pickerName: string } | null>(null);
+  const pickerAnnounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [roundData, setRoundData] = useState<RoundData | null>(null);
   const [submissionsClosed, setSubmissionsClosed] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -295,6 +296,7 @@ function App() {
       setUploadDeadlineTs(null);
       setCommunityVoteData(null);
       setMemePickData(null);
+      setPickerAnnounce(null);
       setRoundData(null);
       setNowPlaying(null);
       setSongResult(null);
@@ -326,10 +328,14 @@ function App() {
       setNowPlaying(null);
       setSongResult(null);
       setRoundLeaderboard(null);
+      if (pickerAnnounceTimeoutRef.current) clearTimeout(pickerAnnounceTimeoutRef.current);
+      setPickerAnnounce({ pickerId: data.pickerId, pickerName: data.pickerName });
+      pickerAnnounceTimeoutRef.current = setTimeout(() => setPickerAnnounce(null), 4000);
     };
     const onRoundStarted = (data: RoundData) => {
       setOwnMemePickData(null);
       setMemePickData(null);
+      setPickerAnnounce(null);
       setCommunityVoteData(null);
       setUploadDeadlineTs(null);
       setSubmittedPlayerIds(new Set());
@@ -563,6 +569,7 @@ function App() {
     setPlayers([]);
     setGameError(null);
     setMemePickData(null);
+    setPickerAnnounce(null);
     setRoundData(null);
     setSubmissionsClosed(false);
     setHasSubmitted(false);
@@ -612,6 +619,17 @@ function App() {
         <section id="center">
           <div className="hud-scale-content">
             <h1 style={{ fontSize: "4rem" }}>Zeit abgelaufen</h1>
+          </div>
+        </section>
+      );
+    } else if (pickerAnnounce) {
+      const isMe = pickerAnnounce.pickerId === myPlayerId;
+      screen = (
+        <section id="center">
+          <div className="hud-scale-content">
+            <h1 style={{ fontSize: "4.5rem", color: isMe ? "#22c55e" : "#ef4444" }}>
+              {isMe ? "Du wählst das Meme!" : `${pickerAnnounce.pickerName} wählt das Meme`}
+            </h1>
           </div>
         </section>
       );
@@ -765,9 +783,6 @@ function App() {
         <div style={{ position: "fixed", bottom: `${phoneBottomOffset}px`, right: "16px", zIndex: 940 }}>
           <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} />
         </div>
-      )}
-      {memePickData && (
-        <PickerIndicator pickerName={memePickData.pickerName} isMe={memePickData.pickerId === myPlayerId} />
       )}
       {screen}
       <div style={{ position: "fixed", bottom: "8px", right: "8px", zIndex: 900, display: "flex", gap: "0.75rem" }}>

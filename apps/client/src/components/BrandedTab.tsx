@@ -14,7 +14,7 @@ interface BrandedTabProps {
 export function BrandedTab({ brand, children }: BrandedTabProps) {
   const theme = BRANDS[brand];
   return (
-    <div style={{ margin: "-20px", padding: "20px", minHeight: "260px", background: theme.background, color: theme.color }}>
+    <div style={{ margin: "-20px", padding: "20px", minHeight: "calc(100% + 40px)", background: theme.background, color: theme.color }}>
       {children}
     </div>
   );
