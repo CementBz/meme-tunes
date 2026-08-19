@@ -3,6 +3,7 @@ import type {
   LeaderboardEntry,
   LobbySettings,
   Player,
+  RoundSubmissionSummary,
   SongSourceType,
   TripleVoteKind,
   TripleVoteOption,
@@ -130,6 +131,8 @@ function App() {
   const [submittedPlayerIds, setSubmittedPlayerIds] = useState<Set<string>>(new Set());
   const [textOnMemeAllowed, setTextOnMemeAllowed] = useState(false);
   const [feedItems, setFeedItems] = useState<{ id: string; text: string }[]>([]);
+  const [showRoundEndOverlay, setShowRoundEndOverlay] = useState(false);
+  const [roundSubmissions, setRoundSubmissions] = useState<RoundSubmissionSummary[]>([]);
 
   const pushFeedItem = (text: string) => {
     setFeedItems((prev) => [...prev.slice(-19), { id: `${Date.now()}-${Math.random()}`, text }]);
@@ -216,6 +219,7 @@ function App() {
       setFireVoteUsedThisRound(snapshot.fireVoteUsed);
       setExtraTimeState(snapshot.extraTimeState);
       setRoundLeaderboard(snapshot.roundLeaderboard);
+      setRoundSubmissions(snapshot.roundSubmissions ?? []);
       setFinalLeaderboard(snapshot.finalLeaderboard);
 
       setReconnecting(false);
@@ -293,6 +297,8 @@ function App() {
       setCommunityVoteData(null);
       setUploadDeadlineTs(null);
       setSubmittedPlayerIds(new Set());
+      setShowRoundEndOverlay(false);
+      setRoundSubmissions([]);
       setMusicOn(true);
       setRoundData(data);
       setCurrentRoundNumber(data.roundNumber);
@@ -307,17 +313,22 @@ function App() {
       setHasRequestedExtraTime(false);
       setHasVotedExtraTime(false);
     };
-    const onSubmissionsClosed = () => setSubmissionsClosed(true);
+    const onSubmissionsClosed = () => {
+      setSubmissionsClosed(true);
+      setShowRoundEndOverlay(true);
+      setTimeout(() => setShowRoundEndOverlay(false), 4000);
+    };
     const onNowPlaying = (data: NowPlaying) => {
       setNowPlaying(data);
       setSongResult(null);
     };
     const onSongResults = (data: SongResult) => setSongResult(data);
-    const onRoundLeaderboard = (entries: LeaderboardEntry[]) => {
+    const onRoundLeaderboard = (data: { entries: LeaderboardEntry[]; roundSubmissions: RoundSubmissionSummary[] }) => {
       setNowPlaying(null);
       setRoundData(null);
       setSongResult(null);
-      setRoundLeaderboard(entries);
+      setRoundLeaderboard(data.entries);
+      setRoundSubmissions(data.roundSubmissions);
     };
     const onGameOver = (entries: LeaderboardEntry[]) => {
       setRoundLeaderboard(null);
@@ -498,6 +509,10 @@ function App() {
     setHasVotedExtraTime(true);
   };
 
+  const handleForceSkipLeaderboard = () => {
+    socket.emit("force-skip-leaderboard");
+  };
+
   const handleLeaveLobby = () => {
     socket.emit("leave-lobby");
     saveStoredSession(null);
@@ -531,6 +546,8 @@ function App() {
     setSubmittedPlayerIds(new Set());
     setTextOnMemeAllowed(false);
     setFeedItems([]);
+    setShowRoundEndOverlay(false);
+    setRoundSubmissions([]);
     setSettings(DEFAULT_SETTINGS);
   };
 
@@ -548,6 +565,14 @@ function App() {
   } else if (lobbyCode && myPlayerId) {
     if (finalLeaderboard) {
       screen = <GameOverView entries={finalLeaderboard} />;
+    } else if (showRoundEndOverlay) {
+      screen = (
+        <section id="center">
+          <div className="hud-scale-content">
+            <h1 style={{ fontSize: "4rem" }}>Zeit abgelaufen</h1>
+          </div>
+        </section>
+      );
     } else if (nowPlaying) {
       screen = (
         <PlaybackView
@@ -639,7 +664,15 @@ function App() {
     } else if (ownMemePickData) {
       screen = <OwnMemePickView deadlineTs={ownMemePickData.deadlineTs} />;
     } else if (roundLeaderboard) {
-      screen = <LeaderboardView entries={roundLeaderboard} roundNumber={currentRoundNumber} />;
+      screen = (
+        <LeaderboardView
+          entries={roundLeaderboard}
+          roundNumber={currentRoundNumber}
+          roundSubmissions={roundSubmissions}
+          isHost={isHost}
+          onForceSkip={handleForceSkipLeaderboard}
+        />
+      );
     } else if (gameStarting) {
       screen = <CountdownOverlay />;
     } else {

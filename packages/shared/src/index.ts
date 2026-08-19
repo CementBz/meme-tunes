@@ -55,6 +55,13 @@ export interface LeaderboardEntry {
   score: number;
 }
 
+export interface RoundSubmissionSummary {
+  playerId: string;
+  playerName: string;
+  memeUrl: string;
+  songTitle: string;
+}
+
 export type MemeSourceType = "giphy" | "local" | "uploads";
 
 export interface LobbySettings {
@@ -145,6 +152,7 @@ export interface ClientToServerEvents {
   "vote-extra-time": () => void;
   "leave-lobby": () => void;
   "update-avatar": (url: string) => void;
+  "force-skip-leaderboard": () => void;
   "pause-game": () => void;
   "resume-game": () => void;
   "submit-meme-upload": (url: string) => void;
@@ -190,7 +198,7 @@ export interface ServerToClientEvents {
     neutralVoterNames?: string[];
     fireVoterNames?: string[];
   }) => void;
-  "round-leaderboard": (entries: LeaderboardEntry[]) => void;
+  "round-leaderboard": (data: { entries: LeaderboardEntry[]; roundSubmissions: RoundSubmissionSummary[] }) => void;
   "game-over": (finalLeaderboard: LeaderboardEntry[]) => void;
   "error-message": (message: string) => void;
   "song-hints": (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => void;
@@ -247,6 +255,7 @@ export interface GameSnapshot {
   fireVoteUsed: boolean;
   extraTimeState: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number } | null;
   roundLeaderboard: LeaderboardEntry[] | null;
+  roundSubmissions: RoundSubmissionSummary[] | null;
   finalLeaderboard: LeaderboardEntry[] | null;
 }
 

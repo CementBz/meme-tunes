@@ -40,6 +40,7 @@ import {
   submitTripleVote,
   requestMemeOptionForPlayer,
   submitOwnMeme,
+  forceSkipRoundResults,
 } from "./gameEngine.js";
 import { registerUploadRoute } from "./upload.js";
 import { LOCAL_MEMES_DIR, getBackgroundImagePool } from "./memes.js";
@@ -302,6 +303,12 @@ io.on("connection", (socket) => {
     if (!player) return;
     player.avatarUrl = url;
     io.to(lobby.code).emit("lobby-updated", publicPlayers(lobby));
+  });
+
+  socket.on("force-skip-leaderboard", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    forceSkipRoundResults(lobby, socket.id);
   });
 
   socket.on("search-songs", (query, ack) => {

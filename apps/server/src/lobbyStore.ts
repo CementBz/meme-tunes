@@ -42,6 +42,7 @@ export interface Lobby {
   tripleVoteResolve: ((winningKey: string) => void) | null;
   ownMemePicks: Map<string, string>;
   playerMemeUrls: Map<string, string>;
+  skipRoundResults: (() => void) | null;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -92,6 +93,7 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     tripleVoteResolve: null,
     ownMemePicks: new Map(),
     playerMemeUrls: new Map(),
+    skipRoundResults: null,
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);

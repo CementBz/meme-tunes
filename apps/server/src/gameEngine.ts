@@ -619,7 +619,7 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
   finishRound(io, lobby);
 }
 
-const ROUND_RESULTS_DISPLAY_MS = 15000;
+const ROUND_RESULTS_DISPLAY_MS = 20000;
 
 function finishRound(io: GameServer, lobby: Lobby): void {
   for (const submission of lobby.currentSubmissions) {
@@ -636,16 +636,34 @@ function finishRound(io: GameServer, lobby: Lobby): void {
     .map((p) => ({ playerId: p.id, name: p.name, score: p.score }))
     .sort((a, b) => b.score - a.score);
 
-  io.to(lobby.code).emit("round-leaderboard", leaderboard);
+  const roundSubmissions = lobby.currentSubmissions.map((s) => ({
+    playerId: s.playerId,
+    playerName: s.playerName,
+    memeUrl: s.memeUrl,
+    songTitle: s.title,
+  }));
 
-  scheduleTimer(lobby, ROUND_RESULTS_DISPLAY_MS, () => {
+  io.to(lobby.code).emit("round-leaderboard", { entries: leaderboard, roundSubmissions });
+
+  const advance = () => {
+    lobby.activeTimer?.cancel();
+    lobby.activeTimer = null;
     if (lobby.currentRoundNumber >= lobby.settings.totalRounds) {
       lobby.phase = "game_over";
       io.to(lobby.code).emit("game-over", leaderboard);
     } else {
       startRound(io, lobby).catch((err) => console.error("Failed to start next round:", err));
     }
-  });
+  };
+
+  lobby.skipRoundResults = advance;
+  scheduleTimer(lobby, ROUND_RESULTS_DISPLAY_MS, advance);
+}
+
+export function forceSkipRoundResults(lobby: Lobby, socketId: string): void {
+  if (lobby.phase !== "round_results") return;
+  if (lobby.hostId !== socketId) return;
+  lobby.skipRoundResults?.();
 }
 
 // Rebuilds everything a freshly (re)connected client needs to jump straight
@@ -725,13 +743,23 @@ export function buildSnapshot(lobby: Lobby, playerId: string): GameSnapshot {
   }
 
   let roundLeaderboard: GameSnapshot["roundLeaderboard"] = null;
+  let roundSubmissions: GameSnapshot["roundSubmissions"] = null;
   let finalLeaderboard: GameSnapshot["finalLeaderboard"] = null;
   if (lobby.phase === "round_results" || lobby.phase === "game_over") {
     const board = publicPlayers(lobby)
       .map((p) => ({ playerId: p.id, name: p.name, score: p.score }))
       .sort((a, b) => b.score - a.score);
-    if (lobby.phase === "game_over") finalLeaderboard = board;
-    else roundLeaderboard = board;
+    if (lobby.phase === "game_over") {
+      finalLeaderboard = board;
+    } else {
+      roundLeaderboard = board;
+      roundSubmissions = lobby.currentSubmissions.map((s) => ({
+        playerId: s.playerId,
+        playerName: s.playerName,
+        memeUrl: s.memeUrl,
+        songTitle: s.title,
+      }));
+    }
   }
 
   return {
@@ -753,6 +781,7 @@ export function buildSnapshot(lobby: Lobby, playerId: string): GameSnapshot {
     fireVoteUsed: lobby.fireVoteUsedBy.has(playerId),
     extraTimeState,
     roundLeaderboard,
+    roundSubmissions,
     finalLeaderboard,
   };
 }
