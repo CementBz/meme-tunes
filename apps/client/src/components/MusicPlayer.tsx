@@ -5,14 +5,22 @@ interface MusicPlayerProps {
   prankEnabled: boolean;
   musicOn: boolean;
   onToggle: (on: boolean) => void;
+  volume: number;
+  showButton?: boolean;
 }
 
 const PRANK_ATTEMPTS = 3;
 const BASE_TOP = 16;
 const BASE_OFFSET_X = 0;
-const VOLUME = 0.05;
 
-export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle }: MusicPlayerProps) {
+export function MusicPlayer({
+  phaseAllowsMusic,
+  prankEnabled,
+  musicOn,
+  onToggle,
+  volume,
+  showButton = true,
+}: MusicPlayerProps) {
   const [prankStep, setPrankStep] = useState(0);
   const [position, setPosition] = useState({ top: BASE_TOP, offsetX: BASE_OFFSET_X });
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -22,14 +30,14 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.volume = VOLUME;
+    audio.volume = volume;
 
     if (musicOn && phaseAllowsMusic) {
       audio.play().catch(() => {});
     } else {
       audio.pause();
     }
-  }, [musicOn, phaseAllowsMusic]);
+  }, [musicOn, phaseAllowsMusic, volume]);
 
   // Browsers block audio-with-sound until the page has seen a real user
   // gesture. Unlock playback on the very first click/tap anywhere on the
@@ -85,22 +93,24 @@ export function MusicPlayer({ phaseAllowsMusic, prankEnabled, musicOn, onToggle 
   return (
     <>
       <audio ref={audioRef} src="/background-music.wav" loop />
-      <button
-        type="button"
-        onClick={handleClick}
-        className="pill-badge"
-        style={{
-          position: "fixed",
-          top: inGame ? "16px" : `${position.top}px`,
-          left: inGame ? "16px" : "50%",
-          transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
-          background: musicOn ? "rgba(209, 102, 102, 0.85)" : "rgba(255, 255, 255, 0.12)",
-          color: musicOn ? "#2b0a0a" : "#ffffff",
-          transition: "top 0.15s ease, transform 0.15s ease, background 0.2s ease",
-        }}
-      >
-        {musicOn ? "🔊 Musik aus" : "🔇 Musik ein"}
-      </button>
+      {showButton && (
+        <button
+          type="button"
+          onClick={handleClick}
+          className="pill-badge"
+          style={{
+            position: "fixed",
+            top: inGame ? "16px" : `${position.top}px`,
+            left: inGame ? "16px" : "50%",
+            transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
+            background: musicOn ? "rgba(209, 102, 102, 0.85)" : "rgba(255, 255, 255, 0.12)",
+            color: musicOn ? "#2b0a0a" : "#ffffff",
+            transition: "top 0.15s ease, transform 0.15s ease, background 0.2s ease",
+          }}
+        >
+          {musicOn ? "🔊 Musik aus" : "🔇 Musik ein"}
+        </button>
+      )}
     </>
   );
 }

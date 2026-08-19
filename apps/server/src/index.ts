@@ -270,6 +270,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("update-avatar", (url) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    const player = lobby.players.get(socket.id);
+    if (!player) return;
+    player.avatarUrl = url;
+    io.to(lobby.code).emit("lobby-updated", publicPlayers(lobby));
+  });
+
   socket.on("search-songs", (query, ack) => {
     console.log(`[search-songs] received query "${query}" from ${socket.id}`);
     searchYoutube(query)

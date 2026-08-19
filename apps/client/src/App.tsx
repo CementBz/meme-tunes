@@ -11,7 +11,6 @@ import { LeaveButton } from "./components/LeaveButton";
 import { LobbyRoom } from "./components/LobbyRoom";
 import { MemePickView } from "./components/MemePickView";
 import { MemeUploadView } from "./components/MemeUploadView";
-import { HudScaleSlider } from "./components/HudScaleSlider";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
@@ -113,6 +112,7 @@ function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameStarting, setGameStarting] = useState(false);
   const [musicOn, setMusicOn] = useState(true);
+  const [musicVolume, setMusicVolume] = useState(0.05);
   const [prankEnabled, setPrankEnabled] = useState(true);
   const [paused, setPaused] = useState(false);
   const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
@@ -536,12 +536,18 @@ function App() {
           onStart={handleStartGame}
           onUpdateSettings={handleUpdateSettings}
           error={gameError}
+          musicVolume={musicVolume}
+          onMusicVolumeChange={setMusicVolume}
+          hudScale={hudScale}
+          onHudScaleChange={setHudScale}
         />
       );
     }
   } else {
     screen = <HomeScreen onCreate={handleCreate} onJoin={handleJoin} error={error} />;
   }
+
+  const onLobbyRoomScreen = Boolean(lobbyCode && myPlayerId && !gameStarted && !reconnecting);
 
   return (
     <>
@@ -550,15 +556,16 @@ function App() {
         prankEnabled={prankEnabled}
         musicOn={musicOn}
         onToggle={setMusicOn}
+        volume={musicVolume}
+        showButton={!onLobbyRoomScreen}
       />
       <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
-      <RulesPanel />
+      {!onLobbyRoomScreen && <RulesPanel />}
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
       {memePickData && (
         <PickerIndicator pickerName={memePickData.pickerName} isMe={memePickData.pickerId === myPlayerId} />
       )}
       {screen}
-      <HudScaleSlider value={hudScale} onChange={setHudScale} />
       <div style={{ position: "fixed", bottom: "8px", right: "8px", zIndex: 900, display: "flex", gap: "0.75rem" }}>
         <button
           type="button"

@@ -49,7 +49,7 @@ function generateCode(): string {
 
 export function createLobby(hostSocketId: string, hostName: string): Lobby {
   const code = generateCode();
-  const host: Player = { id: hostSocketId, name: hostName, isHost: true, connected: true, score: 0 };
+  const host: Player = { id: hostSocketId, name: hostName, isHost: true, connected: true, score: 0, avatarUrl: null };
   const lobby: Lobby = {
     code,
     players: new Map([[hostSocketId, host]]),
@@ -84,7 +84,7 @@ export function joinLobby(code: string, socketId: string, name: string): Lobby |
   const lobby = lobbies.get(code.toUpperCase());
   if (!lobby) return { error: "Lobby nicht gefunden." };
   if (lobby.phase !== "waiting") return { error: "Das Spiel läuft bereits." };
-  const player: Player = { id: socketId, name, isHost: false, connected: true, score: 0 };
+  const player: Player = { id: socketId, name, isHost: false, connected: true, score: 0, avatarUrl: null };
   lobby.players.set(socketId, player);
   socketToLobby.set(socketId, lobby.code);
   return lobby;

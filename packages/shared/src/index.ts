@@ -4,6 +4,7 @@ export interface Player {
   isHost: boolean;
   connected: boolean;
   score: number;
+  avatarUrl: string | null;
 }
 
 export type LobbyPhase =
@@ -125,6 +126,7 @@ export interface ClientToServerEvents {
   "request-extra-time": () => void;
   "vote-extra-time": () => void;
   "leave-lobby": () => void;
+  "update-avatar": (url: string) => void;
   "pause-game": () => void;
   "resume-game": () => void;
   "submit-meme-upload": (url: string) => void;
