@@ -12,6 +12,7 @@ import { PlayersTab } from "./PlayersTab";
 import { YoutubeTab } from "./YoutubeTab";
 import { PreviewTab } from "./PreviewTab";
 import { OwnFilePicker } from "./OwnFilePicker";
+import { PhoneMockup } from "./PhoneMockup";
 import { socket } from "../socket";
 import { ExtraTimeBanner } from "./ExtraTimeBanner";
 
@@ -48,6 +49,7 @@ interface RoundViewProps {
   onHudScaleChange: (v: number) => void;
   previewVolume: number;
   onPreviewVolumeChange: (v: number) => void;
+  feedItems: { id: string; text: string }[];
 }
 
 export function RoundView({
@@ -77,6 +79,7 @@ export function RoundView({
   onHudScaleChange,
   previewVolume,
   onPreviewVolumeChange,
+  feedItems,
 }: RoundViewProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
     Math.max(0, Math.round((submitDeadlineTs - Date.now()) / 1000))
@@ -153,9 +156,9 @@ export function RoundView({
         ) : hasSubmitted ? (
           <p>Song eingereicht ✅ Warte auf die anderen Spieler…</p>
         ) : (
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: "1.5rem", flexWrap: "wrap" }}>
             <BrowserWindow
-              width="min(94vw, 760px)"
+              width="min(90vw, 700px)"
               tabs={[
                 {
                   id: "personal",
@@ -230,6 +233,7 @@ export function RoundView({
                 },
               ]}
             />
+            <PhoneMockup items={feedItems} />
           </div>
         )}
       </div>

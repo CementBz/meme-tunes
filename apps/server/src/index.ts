@@ -106,6 +106,7 @@ io.on("connection", (socket) => {
     ack({ ok: true, playerId: socket.id });
     io.to(result.code).emit("lobby-updated", publicPlayers(result));
     io.to(result.code).emit("settings-updated", result.settings);
+    io.to(result.code).emit("player-joined-feed", result.players.get(socket.id)?.name ?? "?");
   });
 
   socket.on("rejoin-lobby", (code, playerId, ack) => {
@@ -285,10 +286,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("leave-lobby", () => {
+    const leavingName = getLobbyBySocket(socket.id)?.players.get(socket.id)?.name;
     const lobby = removePlayer(socket.id);
     if (lobby) {
       socket.leave(lobby.code);
       io.to(lobby.code).emit("lobby-updated", publicPlayers(lobby));
+      io.to(lobby.code).emit("player-left-feed", leavingName ?? "?");
     }
   });
 
@@ -342,9 +345,11 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
+    const leavingName = getLobbyBySocket(socket.id)?.players.get(socket.id)?.name;
     const lobby = removePlayer(socket.id);
     if (lobby) {
       io.to(lobby.code).emit("lobby-updated", publicPlayers(lobby));
+      io.to(lobby.code).emit("player-left-feed", leavingName ?? "?");
     }
   });
 });

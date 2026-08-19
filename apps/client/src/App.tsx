@@ -129,6 +129,19 @@ function App() {
   const [previewVolume, setPreviewVolume] = useState(0.5);
   const [submittedPlayerIds, setSubmittedPlayerIds] = useState<Set<string>>(new Set());
   const [textOnMemeAllowed, setTextOnMemeAllowed] = useState(false);
+  const [feedItems, setFeedItems] = useState<{ id: string; text: string }[]>([]);
+
+  const pushFeedItem = (text: string) => {
+    setFeedItems((prev) => [...prev.slice(-19), { id: `${Date.now()}-${Math.random()}`, text }]);
+  };
+
+  // Read via a ref inside socket handlers registered once with [] deps below,
+  // so the feed always resolves against the current player list instead of
+  // whatever it was when the listener effect first ran.
+  const playersRef = useRef<Player[]>([]);
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
   const [fireVoteUsedThisRound, setFireVoteUsedThisRound] = useState(false);
   const [reconnecting, setReconnecting] = useState(() => loadStoredSession() !== null);
   const [tripleVoteData, setTripleVoteData] = useState<{
@@ -230,7 +243,11 @@ function App() {
     };
     const onSubmissionReceived = (playerId: string) => {
       setSubmittedPlayerIds((prev) => new Set(prev).add(playerId));
+      const name = playersRef.current.find((p) => p.id === playerId)?.name ?? "Jemand";
+      pushFeedItem(`🎵 ${name} hat sein Tune abgegeben`);
     };
+    const onPlayerJoinedFeed = (name: string) => pushFeedItem(`🎉 ${name} ist beigetreten`);
+    const onPlayerLeftFeed = (name: string) => pushFeedItem(`👋 ${name} hat verlassen`);
     const onOwnMemePickStarted = (data: { deadlineTs: number }) => {
       setGameStarting(false);
       setTripleVoteData(null);
@@ -354,6 +371,8 @@ function App() {
     socket.on("meme-pick-started", onMemePickStarted);
     socket.on("round-started", onRoundStarted);
     socket.on("submission-received", onSubmissionReceived);
+    socket.on("player-joined-feed", onPlayerJoinedFeed);
+    socket.on("player-left-feed", onPlayerLeftFeed);
     socket.on("submissions-closed", onSubmissionsClosed);
     socket.on("now-playing", onNowPlaying);
     socket.on("song-results", onSongResults);
@@ -379,6 +398,8 @@ function App() {
       socket.off("meme-pick-started", onMemePickStarted);
       socket.off("round-started", onRoundStarted);
       socket.off("submission-received", onSubmissionReceived);
+      socket.off("player-joined-feed", onPlayerJoinedFeed);
+      socket.off("player-left-feed", onPlayerLeftFeed);
       socket.off("submissions-closed", onSubmissionsClosed);
       socket.off("now-playing", onNowPlaying);
       socket.off("song-results", onSongResults);
@@ -509,6 +530,7 @@ function App() {
     setOwnMemePickData(null);
     setSubmittedPlayerIds(new Set());
     setTextOnMemeAllowed(false);
+    setFeedItems([]);
     setSettings(DEFAULT_SETTINGS);
   };
 
@@ -573,6 +595,7 @@ function App() {
           onHudScaleChange={setHudScale}
           previewVolume={previewVolume}
           onPreviewVolumeChange={setPreviewVolume}
+          feedItems={feedItems}
         />
       );
     } else if (communityVoteData) {

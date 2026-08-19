@@ -209,6 +209,8 @@ export interface ServerToClientEvents {
   "triple-vote-resolved": (data: { kind: TripleVoteKind; winningKey: string }) => void;
   "own-meme-pick-started": (data: { deadlineTs: number }) => void;
   "submission-received": (playerId: string) => void;
+  "player-joined-feed": (name: string) => void;
+  "player-left-feed": (name: string) => void;
 }
 
 export interface GameSnapshot {
