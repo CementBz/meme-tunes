@@ -97,15 +97,25 @@ export function MusicPlayer({
         <button
           type="button"
           onClick={handleClick}
-          className="pill-badge"
           style={{
             position: "fixed",
             top: inGame ? "16px" : `${position.top}px`,
             left: inGame ? "16px" : "50%",
             transform: inGame ? "none" : `translateX(calc(-50% + ${position.offsetX}px))`,
-            background: musicOn ? "rgba(209, 102, 102, 0.85)" : "rgba(255, 255, 255, 0.12)",
-            color: musicOn ? "#2b0a0a" : "#ffffff",
-            transition: "top 0.15s ease, transform 0.15s ease, background 0.2s ease",
+            transition: "top 0.15s ease, transform 0.15s ease",
+            backgroundImage: "url(/dragon-ui/20240707dragonHeaderA.png)",
+            backgroundSize: "100% 100%",
+            backgroundRepeat: "no-repeat",
+            imageRendering: "pixelated",
+            border: "none",
+            borderRadius: 0,
+            boxShadow: "none",
+            padding: "12px 26px",
+            minWidth: "170px",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            color: "#ffffff",
+            textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
           }}
         >
           {musicOn ? "🔊 Musik aus" : "🔇 Musik ein"}
