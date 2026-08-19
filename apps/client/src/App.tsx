@@ -37,22 +37,26 @@ interface StoredSession {
   playerId: string;
 }
 
+// sessionStorage, not localStorage: it survives a reload (the original goal)
+// but is isolated per tab, so two tabs open in the same browser can't read
+// or overwrite each other's session and end up hijacking one another's
+// player identity.
 function loadStoredSession(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.code === "string" && typeof parsed?.playerId === "string") return parsed;
   } catch {
-    // localStorage unavailable (private browsing etc.) — just skip persistence
+    // sessionStorage unavailable (private browsing etc.) — just skip persistence
   }
   return null;
 }
 
 function saveStoredSession(session: StoredSession | null): void {
   try {
-    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    else localStorage.removeItem(SESSION_KEY);
+    if (session) sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    else sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // ignore
   }
@@ -209,7 +213,7 @@ function App() {
   // A page reload wipes all client state, but the socket connection (and
   // thus the player's slot in the lobby) is gone anyway by then — so on
   // mount, try to resume the same lobby under the new socket id using the
-  // session persisted in localStorage, instead of dropping back to the
+  // session persisted in sessionStorage, instead of dropping back to the
   // home screen mid-game.
   //
   // rejoinAttemptedRef guards against React StrictMode's dev-only double

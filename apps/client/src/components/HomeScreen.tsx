@@ -28,31 +28,30 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
       <div className="hud-scale-content">
         {step === "name" ? (
           <>
-            <div
-              style={{
-                backgroundImage: "url(/dragon-ui/20240707dragonHeaderB.png)",
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-                imageRendering: "pixelated",
-                width: "min(85vw, 480px)",
-                aspectRatio: "3 / 1",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <h1 style={{ fontSize: "2rem", margin: 0, color: "#08222a" }}>Dein Name</h1>
-            </div>
             <input
               type="text"
-              className="flat-input"
-              placeholder=""
+              placeholder="Dein Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleNameSubmit()}
               maxLength={24}
               autoFocus
-              style={{ fontSize: "2rem", padding: "20px 28px", textAlign: "center", width: "min(85vw, 480px)" }}
+              style={{
+                backgroundColor: "transparent",
+                backgroundImage: "url(/dragon-ui/20240707dragonHeaderB.png)",
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+                imageRendering: "pixelated",
+                border: "none",
+                borderRadius: 0,
+                boxShadow: "none",
+                width: "min(85vw, 480px)",
+                aspectRatio: "3 / 1",
+                textAlign: "center",
+                fontSize: "2rem",
+                fontWeight: 700,
+                color: "#08222a",
+              }}
             />
             <button type="button" disabled={!canContinue} onClick={handleNameSubmit} style={{ fontSize: "1.2rem" }}>
               Weiter
