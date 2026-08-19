@@ -10,9 +10,10 @@ function resolveUrl(url: string): string {
 
 interface PhotoCollageBackgroundProps {
   blurred?: boolean;
+  animated?: boolean;
 }
 
-export function PhotoCollageBackground({ blurred = false }: PhotoCollageBackgroundProps) {
+export function PhotoCollageBackground({ blurred = false, animated = true }: PhotoCollageBackgroundProps) {
   const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -48,13 +49,13 @@ export function PhotoCollageBackground({ blurred = false }: PhotoCollageBackgrou
       {columns.map((col, i) => (
         <div key={i} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           <div
-            className={i % 2 === 0 ? "collage-scroll-up" : "collage-scroll-down"}
+            className={animated ? (i % 2 === 0 ? "collage-scroll-up" : "collage-scroll-down") : undefined}
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               width: "100%",
-              animationDuration: `${28 + i * 4}s`,
+              animationDuration: animated ? `${28 + i * 4}s` : undefined,
             }}
           >
             {[...col, ...col].map((url, j) => (

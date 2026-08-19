@@ -25,10 +25,10 @@ const RULE_SECTIONS: RuleSection[] = [
 export function RulesTab() {
   return (
     <div className="browser-tab-content">
-      <h2 style={{ margin: 0, color: "#1a1a1a" }}>Spielprinzip</h2>
+      <h2 style={{ margin: 0 }}>Spielprinzip</h2>
       {RULE_SECTIONS.map((section) => (
         <div key={section.title}>
-          <strong style={{ color: "#1a1a1a" }}>{section.title}</strong>
+          <strong>{section.title}</strong>
           <p style={{ margin: "2px 0 0" }}>{section.text}</p>
         </div>
       ))}

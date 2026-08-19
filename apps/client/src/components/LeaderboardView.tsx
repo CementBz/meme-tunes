@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { LeaderboardEntry, RoundSubmissionSummary } from "@meme-tunes/shared";
 import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
+import { PhotoCollageBackground } from "./PhotoCollageBackground";
 
 interface LeaderboardViewProps {
   entries: LeaderboardEntry[];
@@ -20,6 +21,7 @@ export function LeaderboardView({ entries, roundNumber, roundSubmissions, isHost
 
   return (
     <section id="center">
+      <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content" style={{ maxWidth: "90vw" }}>
         <h1 style={{ fontSize: "3rem" }}>Rangliste nach Runde {roundNumber}</h1>
         <table className="leaderboard-table" style={{ fontSize: "1.3rem", margin: "0 auto" }}>

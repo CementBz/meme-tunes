@@ -12,7 +12,6 @@ import { PlayersTab } from "./PlayersTab";
 import { YoutubeTab } from "./YoutubeTab";
 import { PreviewTab } from "./PreviewTab";
 import { OwnFilePicker } from "./OwnFilePicker";
-import { PhoneMockup } from "./PhoneMockup";
 import { socket } from "../socket";
 import { ExtraTimeBanner } from "./ExtraTimeBanner";
 
@@ -49,7 +48,6 @@ interface RoundViewProps {
   onHudScaleChange: (v: number) => void;
   previewVolume: number;
   onPreviewVolumeChange: (v: number) => void;
-  feedItems: { id: string; text: string }[];
 }
 
 export function RoundView({
@@ -79,7 +77,6 @@ export function RoundView({
   onHudScaleChange,
   previewVolume,
   onPreviewVolumeChange,
-  feedItems,
 }: RoundViewProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
     Math.max(0, Math.round((submitDeadlineTs - Date.now()) / 1000))
@@ -125,12 +122,12 @@ export function RoundView({
         }}
       />
       <div className="hud-scale-content">
-        <h1>
+        <h1 style={{ fontSize: "1.3rem", margin: "4px 0" }}>
           Runde {roundNumber} / {totalRounds}
         </h1>
 
         <div style={{ position: "relative", display: "inline-block" }}>
-          <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "50vw", maxHeight: "38vh", display: "block" }} />
+          <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "50vw", maxHeight: "34vh", display: "block" }} />
           {textOnMemeAllowed && !hasSubmitted && !submissionsClosed && (
             <MemeTextOverlay text={memeText} onTextChange={setMemeText} position={textPosition} onPositionChange={setTextPosition} />
           )}
@@ -156,27 +153,10 @@ export function RoundView({
         ) : hasSubmitted ? (
           <p>Song eingereicht ✅ Warte auf die anderen Spieler…</p>
         ) : (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: "1.5rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
             <BrowserWindow
               width="min(90vw, 700px)"
               tabs={[
-                {
-                  id: "personal",
-                  label: "Persönliche Einstellungen",
-                  content: (
-                    <PersonalSettingsTab
-                      musicVolume={musicVolume}
-                      onMusicVolumeChange={onMusicVolumeChange}
-                      hudScale={hudScale}
-                      onHudScaleChange={onHudScaleChange}
-                    />
-                  ),
-                },
-                {
-                  id: "lobby-settings",
-                  label: "Lobby-Einstellungen",
-                  content: <SettingsPanel settings={settings} isHost={isHost} onUpdate={onUpdateSettings} />,
-                },
                 {
                   id: "players",
                   label: "Spieler",
@@ -231,9 +211,25 @@ export function RoundView({
                   label: "Eigene Dateien",
                   content: <OwnFilePicker onSubmit={handleSubmitWithMeme} />,
                 },
+                {
+                  id: "personal",
+                  label: "Persönliche Einstellungen",
+                  content: (
+                    <PersonalSettingsTab
+                      musicVolume={musicVolume}
+                      onMusicVolumeChange={onMusicVolumeChange}
+                      hudScale={hudScale}
+                      onHudScaleChange={onHudScaleChange}
+                    />
+                  ),
+                },
+                {
+                  id: "lobby-settings",
+                  label: "Lobby-Einstellungen",
+                  content: <SettingsPanel settings={settings} isHost={isHost} onUpdate={onUpdateSettings} />,
+                },
               ]}
             />
-            <PhoneMockup items={feedItems} />
           </div>
         )}
       </div>

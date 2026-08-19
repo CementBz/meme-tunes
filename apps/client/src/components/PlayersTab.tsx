@@ -16,7 +16,7 @@ export function PlayersTab({ players, submittedPlayerIds }: PlayersTabProps) {
 
   return (
     <div className="browser-tab-content">
-      <h2 style={{ margin: 0, color: "#1a1a1a" }}>Spieler</h2>
+      <h2 style={{ margin: 0 }}>Spieler</h2>
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {sorted.map((p) => (
           <li key={p.id} style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>

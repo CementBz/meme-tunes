@@ -56,6 +56,7 @@ export function LobbyMembersTab({ code, players, myPlayerId, isHost, onStartClic
       <button
         type="button"
         onClick={handleCopyCode}
+        className="apple-pill"
         style={{ alignSelf: "flex-start", fontFamily: "var(--mono)", fontSize: "1.3rem", letterSpacing: "0.1em" }}
       >
         {code} {copied ? "✓" : "📋"}
@@ -100,7 +101,13 @@ export function LobbyMembersTab({ code, players, myPlayerId, isHost, onStartClic
 
       {isHost ? (
         <>
-          <button type="button" onClick={onStartClick} disabled={!canStart} style={{ alignSelf: "flex-start" }}>
+          <button
+            type="button"
+            onClick={onStartClick}
+            disabled={!canStart}
+            className="apple-pill"
+            style={{ alignSelf: "flex-start", background: canStart ? "#0071e3" : undefined, color: canStart ? "#fff" : undefined }}
+          >
             Spiel starten
           </button>
           {!canStart && <p style={{ fontSize: "0.8rem", margin: 0 }}>Mindestens {MIN_PLAYERS} Spieler nötig.</p>}

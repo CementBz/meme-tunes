@@ -14,11 +14,18 @@ const TEXT_STYLE: CSSProperties = {
   color: "#ffffff",
   textShadow:
     "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000",
-  fontSize: "min(6vw, 2.5rem)",
   lineHeight: 1.1,
   letterSpacing: "0.02em",
   wordBreak: "break-word",
 };
+
+// Longer text shrinks instead of just wrapping/centering, so it stays within
+// its third (top or bottom) of the meme image instead of growing past it.
+function fontSizeForText(text: string): string {
+  const len = text.length || 1;
+  const vw = Math.max(2.2, Math.min(6, 6 - Math.max(0, len - 16) * 0.13));
+  return `clamp(0.8rem, ${vw}vw, 2.5rem)`;
+}
 
 export function MemeTextOverlay({ text, onTextChange, position, onPositionChange }: MemeTextOverlayProps) {
   const [editing, setEditing] = useState(false);
@@ -47,6 +54,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
           onKeyDown={(e) => e.key === "Enter" && setEditing(false)}
           style={{
             ...TEXT_STYLE,
+            fontSize: fontSizeForText(text),
             background: "rgba(0,0,0,0.35)",
             border: "none",
             textAlign: "center",
@@ -58,7 +66,15 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
       ) : (
         <div
           onClick={() => setEditing(true)}
-          style={{ ...TEXT_STYLE, opacity: text ? 1 : 0.55, cursor: "text", textAlign: "center" }}
+          style={{
+            ...TEXT_STYLE,
+            fontSize: fontSizeForText(text),
+            opacity: text ? 1 : 0.55,
+            cursor: "text",
+            textAlign: "center",
+            maxHeight: "32%",
+            overflow: "hidden",
+          }}
         >
           {text || "Text (optional)"}
         </div>

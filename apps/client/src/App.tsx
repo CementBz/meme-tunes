@@ -25,6 +25,7 @@ import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
 import { RulesPanel } from "./components/RulesPanel";
 import { RoundView } from "./components/RoundView";
+import { PhoneMockup } from "./components/PhoneMockup";
 import { PlaybackView } from "./components/PlaybackView";
 import { TripleVoteView } from "./components/TripleVoteView";
 import type { SongSubmission } from "./types";
@@ -252,6 +253,8 @@ function App() {
     };
     const onPlayerJoinedFeed = (name: string) => pushFeedItem(`🎉 ${name} ist beigetreten`);
     const onPlayerLeftFeed = (name: string) => pushFeedItem(`👋 ${name} hat verlassen`);
+    const onChatMessage = (data: { id: string; playerName: string; text: string }) =>
+      pushFeedItem(`💬 ${data.playerName}: ${data.text}`);
     const onOwnMemePickStarted = (data: { deadlineTs: number }) => {
       setGameStarting(false);
       setTripleVoteData(null);
@@ -384,6 +387,7 @@ function App() {
     socket.on("submission-received", onSubmissionReceived);
     socket.on("player-joined-feed", onPlayerJoinedFeed);
     socket.on("player-left-feed", onPlayerLeftFeed);
+    socket.on("chat-message", onChatMessage);
     socket.on("submissions-closed", onSubmissionsClosed);
     socket.on("now-playing", onNowPlaying);
     socket.on("song-results", onSongResults);
@@ -411,6 +415,7 @@ function App() {
       socket.off("submission-received", onSubmissionReceived);
       socket.off("player-joined-feed", onPlayerJoinedFeed);
       socket.off("player-left-feed", onPlayerLeftFeed);
+      socket.off("chat-message", onChatMessage);
       socket.off("submissions-closed", onSubmissionsClosed);
       socket.off("now-playing", onNowPlaying);
       socket.off("song-results", onSongResults);
@@ -511,6 +516,10 @@ function App() {
 
   const handleForceSkipLeaderboard = () => {
     socket.emit("force-skip-leaderboard");
+  };
+
+  const handleSendChatMessage = (text: string) => {
+    socket.emit("send-chat-message", text);
   };
 
   const handleLeaveLobby = () => {
@@ -620,7 +629,6 @@ function App() {
           onHudScaleChange={setHudScale}
           previewVolume={previewVolume}
           onPreviewVolumeChange={setPreviewVolume}
-          feedItems={feedItems}
         />
       );
     } else if (communityVoteData) {
@@ -697,6 +705,12 @@ function App() {
   }
 
   const onLobbyRoomScreen = Boolean(lobbyCode && myPlayerId && !gameStarted && !reconnecting);
+  // RoundView has its own Personal-Settings tab with a volume slider, same
+  // as the waiting room — so the floating button would just be redundant.
+  const onRoundViewScreen = Boolean(
+    lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard && !showRoundEndOverlay && !nowPlaying && roundData
+  );
+  const showPhone = Boolean(lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard);
 
   return (
     <>
@@ -706,11 +720,16 @@ function App() {
         musicOn={musicOn}
         onToggle={setMusicOn}
         volume={musicVolume}
-        showButton={!onLobbyRoomScreen}
+        showButton={!onLobbyRoomScreen && !onRoundViewScreen}
       />
       <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
       {!onLobbyRoomScreen && <RulesPanel />}
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
+      {showPhone && (
+        <div style={{ position: "fixed", top: "90px", right: "16px", zIndex: 940 }}>
+          <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} />
+        </div>
+      )}
       {memePickData && (
         <PickerIndicator pickerName={memePickData.pickerName} isMe={memePickData.pickerId === myPlayerId} />
       )}

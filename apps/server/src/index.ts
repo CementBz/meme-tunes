@@ -318,6 +318,16 @@ io.on("connection", (socket) => {
     markPhaseReady(lobby, socket.id);
   });
 
+  socket.on("send-chat-message", (text) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    const player = lobby.players.get(socket.id);
+    if (!player) return;
+    const trimmed = text.trim().slice(0, 200);
+    if (!trimmed) return;
+    io.to(lobby.code).emit("chat-message", { id: randomUUID(), playerName: player.name, text: trimmed });
+  });
+
   socket.on("search-songs", (query, ack) => {
     console.log(`[search-songs] received query "${query}" from ${socket.id}`);
     searchYoutube(query)

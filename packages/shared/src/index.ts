@@ -109,7 +109,7 @@ export const COMMUNITY_VOTE_SECONDS = 15;
 export const EXTRA_TIME_SECONDS = 20;
 export const EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS = 20;
 export const EXTRA_TIME_VOTE_WINDOW_SECONDS = 7;
-export const TRIPLE_VOTE_SECONDS = 7;
+export const TRIPLE_VOTE_SECONDS = 15;
 export const OWN_MEME_PICK_SECONDS = 10;
 
 // Client -> Server events
@@ -154,6 +154,7 @@ export interface ClientToServerEvents {
   "update-avatar": (url: string) => void;
   "force-skip-leaderboard": () => void;
   "phase-ready": () => void;
+  "send-chat-message": (text: string) => void;
   "pause-game": () => void;
   "resume-game": () => void;
   "submit-meme-upload": (url: string) => void;
@@ -220,6 +221,7 @@ export interface ServerToClientEvents {
   "submission-received": (playerId: string) => void;
   "player-joined-feed": (name: string) => void;
   "player-left-feed": (name: string) => void;
+  "chat-message": (data: { id: string; playerName: string; text: string }) => void;
 }
 
 export interface GameSnapshot {

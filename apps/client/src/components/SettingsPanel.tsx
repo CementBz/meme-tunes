@@ -16,7 +16,7 @@ const FIELDS: { key: NumericSettingKey; label: string; unit: string }[] = [
 export function SettingsPanel({ settings, isHost, onUpdate }: SettingsPanelProps) {
   return (
     <div className="browser-tab-content" style={{ opacity: isHost ? 1 : 0.55 }}>
-      <h2 style={{ margin: 0, color: "#1a1a1a" }}>Lobby-Einstellungen</h2>
+      <h2 style={{ margin: 0 }}>Lobby-Einstellungen</h2>
 
       {FIELDS.map(({ key, label, unit }) => {
         const bounds = SETTINGS_BOUNDS[key];

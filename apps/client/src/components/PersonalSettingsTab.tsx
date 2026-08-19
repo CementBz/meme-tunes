@@ -13,7 +13,7 @@ export function PersonalSettingsTab({
 }: PersonalSettingsTabProps) {
   return (
     <div className="browser-tab-content">
-      <h2 style={{ margin: 0, color: "#1a1a1a" }}>Persönliche Einstellungen</h2>
+      <h2 style={{ margin: 0 }}>Persönliche Einstellungen</h2>
 
       <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
         Musik-Lautstärke: {Math.round(musicVolume * 100)}%
