@@ -153,6 +153,7 @@ export interface ClientToServerEvents {
   "leave-lobby": () => void;
   "update-avatar": (url: string) => void;
   "force-skip-leaderboard": () => void;
+  "phase-ready": () => void;
   "pause-game": () => void;
   "resume-game": () => void;
   "submit-meme-upload": (url: string) => void;

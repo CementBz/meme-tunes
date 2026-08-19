@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import type { LeaderboardEntry, RoundSubmissionSummary } from "@meme-tunes/shared";
+import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
 
 interface LeaderboardViewProps {
@@ -10,6 +12,12 @@ interface LeaderboardViewProps {
 }
 
 export function LeaderboardView({ entries, roundNumber, roundSubmissions, isHost, onForceSkip }: LeaderboardViewProps) {
+  useEffect(() => {
+    // Lets the server hold the 20s display timer until everyone's rendered
+    // this (potentially image-heavy) gallery instead of starting it blind.
+    socket.emit("phase-ready");
+  }, [roundNumber]);
+
   return (
     <section id="center">
       <div className="hud-scale-content" style={{ maxWidth: "90vw" }}>

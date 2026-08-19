@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SongSourceType } from "@meme-tunes/shared";
 import { loadYoutubeIframeApi } from "../youtubeIframeApi";
+import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
 import { MehIcon, ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
 
@@ -62,6 +63,10 @@ export function PlaybackView({
 
   useEffect(() => {
     setPlayback("pending");
+    // Tells the server we've rendered this song's screen and can start
+    // loading it, so it can hold the voting countdown until everyone's
+    // caught up instead of assuming a fixed buffer is always enough.
+    socket.emit("phase-ready");
   }, [submissionId]);
 
   useEffect(() => {

@@ -41,6 +41,7 @@ import {
   requestMemeOptionForPlayer,
   submitOwnMeme,
   forceSkipRoundResults,
+  markPhaseReady,
 } from "./gameEngine.js";
 import { registerUploadRoute } from "./upload.js";
 import { LOCAL_MEMES_DIR, getBackgroundImagePool } from "./memes.js";
@@ -309,6 +310,12 @@ io.on("connection", (socket) => {
     const lobby = getLobbyBySocket(socket.id);
     if (!lobby) return;
     forceSkipRoundResults(lobby, socket.id);
+  });
+
+  socket.on("phase-ready", () => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    markPhaseReady(lobby, socket.id);
   });
 
   socket.on("search-songs", (query, ack) => {

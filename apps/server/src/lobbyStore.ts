@@ -43,6 +43,8 @@ export interface Lobby {
   ownMemePicks: Map<string, string>;
   playerMemeUrls: Map<string, string>;
   skipRoundResults: (() => void) | null;
+  readyPlayerIds: Set<string>;
+  readyCheck: (() => void) | null;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -94,6 +96,8 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     ownMemePicks: new Map(),
     playerMemeUrls: new Map(),
     skipRoundResults: null,
+    readyPlayerIds: new Set(),
+    readyCheck: null,
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);

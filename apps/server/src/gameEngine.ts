@@ -23,6 +23,38 @@ type GameServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 const MEME_OPTIONS_COUNT = 3;
 
+// Fallback ceiling for awaitAllReady() — if a straggler's tab is frozen or
+// they silently dropped without a clean disconnect, the round must still be
+// able to move on instead of hanging forever for everyone else.
+const PHASE_READY_TIMEOUT_MS = 6000;
+
+// Lets a phase transition (song playback, leaderboard) hold its follow-up
+// timer until every connected player has confirmed they've loaded the new
+// content, instead of assuming a fixed delay is always enough. Resolves
+// early the moment everyone's ready, or after PHASE_READY_TIMEOUT_MS either
+// way, so one laggy client can never freeze the game for the rest.
+function awaitAllReady(lobby: Lobby): Promise<void> {
+  return new Promise((resolve) => {
+    lobby.readyPlayerIds = new Set();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      lobby.readyCheck = null;
+      resolve();
+    };
+    lobby.readyCheck = () => {
+      if (connectedPlayers(lobby).every((p) => lobby.readyPlayerIds.has(p.id))) finish();
+    };
+    setTimeout(finish, PHASE_READY_TIMEOUT_MS);
+  });
+}
+
+export function markPhaseReady(lobby: Lobby, socketId: string): void {
+  lobby.readyPlayerIds.add(socketId);
+  lobby.readyCheck?.();
+}
+
 const MEME_SOURCE_VOTE_OPTIONS: TripleVoteOption[] = [
   { key: "giphy", title: "Giphy Bilder", description: "Zufällige Meme-Bilder von Giphy." },
   { key: "local", title: "Lennys Bilderpool", description: "Bilder aus Lennys eigener Sammlung." },
@@ -36,11 +68,6 @@ const MEME_MODE_VOTE_OPTIONS: TripleVoteOption[] = [
   { key: "shared", title: "Gemeinsames Meme", description: "Alle Spieler bekommen pro Runde dasselbe Meme." },
   { key: "individual", title: "Eigenes Meme", description: "Jede*r wählt sein eigenes Meme — 10s, beliebig oft skippen." },
 ];
-// Gives clients time to load/buffer the video/YouTube player before the
-// playbackSeconds countdown starts, so slow connections still get to hear
-// most of the song instead of it arriving right as voting closes.
-const PLAYBACK_LOAD_BUFFER_SECONDS = 2;
-
 function scheduleTimer(lobby: Lobby, ms: number, onDone: () => void): void {
   const timer = new PausableTimer(ms, () => {
     lobby.activeTimer = null;
@@ -590,7 +617,7 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
       thumbnailUrl: submission.thumbnailUrl,
       serverTs: Date.now(),
     });
-    await pausableDelay(lobby, PLAYBACK_LOAD_BUFFER_SECONDS * 1000);
+    await awaitAllReady(lobby);
 
     io.to(lobby.code).emit("voting-open", submission.id);
 
@@ -616,12 +643,12 @@ async function playSubmissions(io: GameServer, lobby: Lobby): Promise<void> {
     await pausableDelay(lobby, PLAYBACK_PAUSE_SECONDS * 1000);
   }
 
-  finishRound(io, lobby);
+  await finishRound(io, lobby);
 }
 
 const ROUND_RESULTS_DISPLAY_MS = 20000;
 
-function finishRound(io: GameServer, lobby: Lobby): void {
+async function finishRound(io: GameServer, lobby: Lobby): Promise<void> {
   for (const submission of lobby.currentSubmissions) {
     const player = lobby.players.get(submission.playerId);
     if (player) {
@@ -631,6 +658,11 @@ function finishRound(io: GameServer, lobby: Lobby): void {
   }
 
   lobby.phase = "round_results";
+  // Cleared for the duration of the ready-gate below: force-skip is only
+  // meaningful once the real 20s timer is running, so a click during the
+  // brief load wait is simply a no-op rather than firing a stale handler
+  // from whatever the previous round's advance() closure was.
+  lobby.skipRoundResults = null;
 
   const leaderboard = publicPlayers(lobby)
     .map((p) => ({ playerId: p.id, name: p.name, score: p.score }))
@@ -644,6 +676,11 @@ function finishRound(io: GameServer, lobby: Lobby): void {
   }));
 
   io.to(lobby.code).emit("round-leaderboard", { entries: leaderboard, roundSubmissions });
+
+  // Give everyone a chance to finish rendering the (image-heavy) gallery
+  // before the shared display timer starts counting down against them.
+  await awaitAllReady(lobby);
+  if (lobby.phase !== "round_results") return; // lobby moved on while we were waiting (e.g. everyone left)
 
   const advance = () => {
     lobby.activeTimer?.cancel();
