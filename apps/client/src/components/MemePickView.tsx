@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MemeMedia } from "./MemeMedia";
-import { DragonFrameBackground } from "./DragonFrameBackground";
+import { PhotoCollageBackground } from "./PhotoCollageBackground";
 
 interface MemePickViewProps {
   roundNumber: number;
@@ -42,7 +42,7 @@ export function MemePickView({
 
   return (
     <section id="center">
-      <DragonFrameBackground />
+      <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content">
         <h1>
           Runde {roundNumber} / {totalRounds} — welches Meme?

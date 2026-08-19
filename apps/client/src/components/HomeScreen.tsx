@@ -46,7 +46,7 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
             <input
               type="text"
               className="flat-input"
-              placeholder="Dein Name"
+              placeholder=""
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleNameSubmit()}

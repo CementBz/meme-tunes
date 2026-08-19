@@ -103,20 +103,23 @@ interface SongResult {
   fireVoterNames?: string[];
 }
 
-// Keeps the phone's bottom edge flush with the browser window's bottom edge
-// (when one is on screen) instead of sitting at an arbitrary fixed offset.
-function useBrowserBottomOffset(): number {
-  const [offset, setOffset] = useState(16);
+// Keeps the phone flush with the browser window's top and bottom edges
+// (when one is on screen) instead of sitting at an arbitrary fixed size/offset.
+function useBrowserAlignment(): { bottomOffset: number; height: string | undefined } {
+  const [bottomOffset, setBottomOffset] = useState(16);
+  const [height, setHeight] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const compute = () => {
       const el = document.querySelector(".browser-window-outer");
       if (!el) {
-        setOffset(16);
+        setBottomOffset(16);
+        setHeight(undefined);
         return;
       }
-      const gap = window.innerHeight - el.getBoundingClientRect().bottom;
-      setOffset(Math.max(16, Math.round(gap)));
+      const rect = el.getBoundingClientRect();
+      setBottomOffset(Math.max(16, Math.round(window.innerHeight - rect.bottom)));
+      setHeight(`${Math.round(rect.height)}px`);
     };
     compute();
     const resizeObserver = new ResizeObserver(compute);
@@ -131,7 +134,7 @@ function useBrowserBottomOffset(): number {
     };
   });
 
-  return offset;
+  return { bottomOffset, height };
 }
 
 function App() {
@@ -764,7 +767,7 @@ function App() {
     lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard && !showRoundEndOverlay && !nowPlaying && roundData
   );
   const showPhone = Boolean(lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard);
-  const phoneBottomOffset = useBrowserBottomOffset();
+  const { bottomOffset: phoneBottomOffset, height: phoneHeight } = useBrowserAlignment();
 
   return (
     <>
@@ -781,7 +784,7 @@ function App() {
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
       {showPhone && (
         <div style={{ position: "fixed", bottom: `${phoneBottomOffset}px`, right: "16px", zIndex: 940 }}>
-          <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} />
+          <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} height={phoneHeight} />
         </div>
       )}
       {screen}

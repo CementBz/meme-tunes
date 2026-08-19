@@ -9,9 +9,10 @@ interface FeedItem {
 interface PhoneMockupProps {
   items: FeedItem[];
   onSendMessage: (text: string) => void;
+  height?: string;
 }
 
-export function PhoneMockup({ items, onSendMessage }: PhoneMockupProps) {
+export function PhoneMockup({ items, onSendMessage, height = "min(52vh, 420px)" }: PhoneMockupProps) {
   const [message, setMessage] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const { offset, dragHandleProps } = useDraggable();
@@ -31,7 +32,8 @@ export function PhoneMockup({ items, onSendMessage }: PhoneMockupProps) {
     <div
       style={{
         width: "220px",
-        height: "min(52vh, 420px)",
+        height,
+        boxSizing: "border-box",
         background: "#111",
         borderRadius: "28px",
         padding: "14px 10px",
