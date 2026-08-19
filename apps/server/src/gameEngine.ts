@@ -10,17 +10,32 @@ import {
   EXTRA_TIME_SECONDS,
   EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS,
   EXTRA_TIME_VOTE_WINDOW_SECONDS,
+  TRIPLE_VOTE_SECONDS,
+  OWN_MEME_PICK_SECONDS,
 } from "@meme-tunes/shared";
-import type { GameSnapshot, Submission } from "@meme-tunes/shared";
+import type { GameSnapshot, MemeSourceType, Submission, TripleVoteKind, TripleVoteOption } from "@meme-tunes/shared";
 import type { Lobby } from "./lobbyStore.js";
 import { connectedPlayers, publicPlayers } from "./lobbyStore.js";
-import { getRandomGiphyMemes, getRandomLocalMemes, getGiphyTitle } from "./memes.js";
-import { searchYoutube } from "./youtube.js";
+import { getRandomGiphyMemes, getRandomLocalMemes } from "./memes.js";
 import { PausableTimer } from "./pausableTimer.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 const MEME_OPTIONS_COUNT = 3;
+
+const MEME_SOURCE_VOTE_OPTIONS: TripleVoteOption[] = [
+  { key: "giphy", title: "Giphy Bilder", description: "Zufällige Meme-Bilder von Giphy." },
+  { key: "local", title: "Lennys Bilderpool", description: "Bilder aus Lennys eigener Sammlung." },
+  { key: "uploads", title: "Eigene Dateien", description: "Jede*r lädt eigene Bilder hoch, daraus wird gewählt." },
+];
+const MEME_TEXT_VOTE_OPTIONS: TripleVoteOption[] = [
+  { key: "yes", title: "Text erlaubt", description: "Auf jedes Meme darf oben oder unten ein eigener Text geschrieben werden." },
+  { key: "no", title: "Kein Text", description: "Die Memes bleiben unverändert, ohne Text." },
+];
+const MEME_MODE_VOTE_OPTIONS: TripleVoteOption[] = [
+  { key: "shared", title: "Gemeinsames Meme", description: "Alle Spieler bekommen pro Runde dasselbe Meme." },
+  { key: "individual", title: "Eigenes Meme", description: "Jede*r wählt sein eigenes Meme — 10s, beliebig oft skippen." },
+];
 // Gives clients time to load/buffer the video/YouTube player before the
 // playbackSeconds countdown starts, so slow connections still get to hear
 // most of the song instead of it arriving right as voting closes.
@@ -79,11 +94,83 @@ export async function startGame(io: GameServer, lobby: Lobby): Promise<void> {
   lobby.paused = false;
   lobby.uploadsByPlayer = new Map();
 
-  if (lobby.settings.memeSource === "uploads") {
+  const sourceKey = await runTripleVote(io, lobby, "meme_source", MEME_SOURCE_VOTE_OPTIONS);
+  lobby.memeSourceChoice = sourceKey as MemeSourceType;
+
+  const textKey = await runTripleVote(io, lobby, "meme_text", MEME_TEXT_VOTE_OPTIONS);
+  lobby.textOnMemeAllowed = textKey === "yes";
+
+  const modeKey = await runTripleVote(io, lobby, "meme_mode", MEME_MODE_VOTE_OPTIONS);
+  lobby.memeMode = modeKey === "individual" ? "individual" : "shared";
+
+  if (lobby.memeSourceChoice === "uploads") {
     beginUploadCollection(io, lobby);
   } else {
     await startRound(io, lobby);
   }
+}
+
+function runTripleVote(
+  io: GameServer,
+  lobby: Lobby,
+  kind: TripleVoteKind,
+  options: TripleVoteOption[]
+): Promise<string> {
+  return new Promise((resolve) => {
+    lobby.phase = `vote_${kind}` as Lobby["phase"];
+    lobby.tripleVoteKind = kind;
+    lobby.tripleVoteOptions = options;
+    lobby.tripleVotes = new Map();
+    lobby.tripleVoteResolve = resolve;
+
+    const voteDeadlineTs = Date.now() + TRIPLE_VOTE_SECONDS * 1000;
+    io.to(lobby.code).emit("triple-vote-started", { kind, options, voteDeadlineTs });
+
+    scheduleTimer(lobby, TRIPLE_VOTE_SECONDS * 1000, () => finishTripleVote(io, lobby));
+  });
+}
+
+function finishTripleVote(io: GameServer, lobby: Lobby): void {
+  lobby.activeTimer?.cancel();
+  lobby.activeTimer = null;
+  if (!lobby.tripleVoteResolve || !lobby.tripleVoteKind) return;
+
+  const options = lobby.tripleVoteOptions;
+  const tally = new Map<string, number>();
+  for (const key of lobby.tripleVotes.values()) tally.set(key, (tally.get(key) ?? 0) + 1);
+
+  let winningKey = options[Math.floor(Math.random() * options.length)].key;
+  let maxVotes = 0;
+  const tied: string[] = [];
+  for (const opt of options) {
+    const v = tally.get(opt.key) ?? 0;
+    if (v > maxVotes) {
+      maxVotes = v;
+      tied.length = 0;
+      tied.push(opt.key);
+    } else if (v === maxVotes && v > 0) {
+      tied.push(opt.key);
+    }
+  }
+  if (maxVotes > 0) winningKey = tied[Math.floor(Math.random() * tied.length)];
+
+  io.to(lobby.code).emit("triple-vote-resolved", { kind: lobby.tripleVoteKind, winningKey });
+
+  const resolve = lobby.tripleVoteResolve;
+  lobby.tripleVoteKind = null;
+  lobby.tripleVoteResolve = null;
+  resolve(winningKey);
+}
+
+export function submitTripleVote(io: GameServer, lobby: Lobby, socketId: string, kind: TripleVoteKind, optionKey: string): void {
+  if (lobby.tripleVoteKind !== kind) return;
+  if (!lobby.players.get(socketId)) return;
+  if (!lobby.tripleVoteOptions.some((o) => o.key === optionKey)) return;
+  if (lobby.tripleVotes.has(socketId)) return;
+
+  lobby.tripleVotes.set(socketId, optionKey);
+  const allVoted = connectedPlayers(lobby).every((p) => lobby.tripleVotes.has(p.id));
+  if (allVoted) finishTripleVote(io, lobby);
 }
 
 function beginUploadCollection(io: GameServer, lobby: Lobby): void {
@@ -118,7 +205,9 @@ async function startRound(io: GameServer, lobby: Lobby): Promise<void> {
   lobby.currentSubmissions = [];
   lobby.fireVoteUsedBy = new Set();
 
-  if (lobby.settings.memeSource === "uploads") {
+  if (lobby.memeMode === "individual") {
+    await beginOwnMemePick(io, lobby);
+  } else if (lobby.memeSourceChoice === "uploads") {
     await beginCommunityVote(io, lobby);
   } else {
     lobby.phase = "round_meme_reveal";
@@ -213,7 +302,7 @@ function getCurrentPickerId(lobby: Lobby): string | null {
 async function beginMemePick(io: GameServer, lobby: Lobby, excludeExtra: Set<string> = new Set()): Promise<void> {
   const excluded = new Set([...lobby.usedMemeUrls, ...excludeExtra]);
   let memeOptions: string[];
-  if (lobby.settings.memeSource === "local") {
+  if (lobby.memeSourceChoice === "local") {
     try {
       memeOptions = await getRandomLocalMemes(excluded, MEME_OPTIONS_COUNT);
     } catch (err) {
@@ -272,14 +361,20 @@ function resolveMemePick(io: GameServer, lobby: Lobby, chosenIndex: number | nul
   proceedToSubmission(io, lobby, memeUrl);
 }
 
+function beginSubmissionPhase(lobby: Lobby): number {
+  lobby.phase = "round_submitting";
+  cancelExtraTimeRequest(lobby);
+  const submitDeadlineTs = Date.now() + lobby.settings.submitSeconds * 1000;
+  lobby.submitDeadlineTs = submitDeadlineTs;
+  return submitDeadlineTs;
+}
+
 function proceedToSubmission(io: GameServer, lobby: Lobby, memeUrl: string): void {
   lobby.usedMemeUrls.add(memeUrl);
   lobby.currentMemeUrl = memeUrl;
-  lobby.phase = "round_submitting";
-  cancelExtraTimeRequest(lobby);
+  lobby.playerMemeUrls = new Map(connectedPlayers(lobby).map((p) => [p.id, memeUrl]));
 
-  const submitDeadlineTs = Date.now() + lobby.settings.submitSeconds * 1000;
-  lobby.submitDeadlineTs = submitDeadlineTs;
+  const submitDeadlineTs = beginSubmissionPhase(lobby);
 
   io.to(lobby.code).emit("round-started", {
     roundNumber: lobby.currentRoundNumber,
@@ -288,26 +383,89 @@ function proceedToSubmission(io: GameServer, lobby: Lobby, memeUrl: string): voi
   });
 
   scheduleTimer(lobby, lobby.settings.submitSeconds * 1000, () => closeSubmissions(io, lobby));
-
-  fetchSongHints(io, lobby, lobby.currentRoundNumber, memeUrl);
 }
 
-function fetchSongHints(io: GameServer, lobby: Lobby, roundNumber: number, memeUrl: string): void {
-  if (!lobby.settings.songHints || lobby.settings.memeSource !== "giphy") return;
+async function beginOwnMemePick(io: GameServer, lobby: Lobby): Promise<void> {
+  lobby.phase = "own_meme_pick";
+  lobby.ownMemePicks = new Map();
+  const deadlineTs = Date.now() + OWN_MEME_PICK_SECONDS * 1000;
 
-  const title = getGiphyTitle(memeUrl);
-  if (!title) return;
+  io.to(lobby.code).emit("own-meme-pick-started", { deadlineTs });
 
-  const cleanedTitle = title.replace(/\s*GIF(\s+by\s+.+)?$/i, "").trim();
-  if (!cleanedTitle) return;
-  const query = `${cleanedTitle} song`;
+  scheduleTimer(lobby, OWN_MEME_PICK_SECONDS * 1000, () => {
+    resolveOwnMemePick(io, lobby).catch((err) => console.error("Failed to resolve own-meme pick:", err));
+  });
+}
 
-  searchYoutube(query)
-    .then((results) => {
-      if (lobby.currentRoundNumber !== roundNumber) return; // round already moved on, discard stale results
-      io.to(lobby.code).emit("song-hints", { roundNumber, hints: results.slice(0, 5) });
-    })
-    .catch((err) => console.error("Song-Hints Suche fehlgeschlagen:", err));
+async function requestMemeOption(lobby: Lobby): Promise<string | null> {
+  const excluded = lobby.usedMemeUrls;
+  try {
+    if (lobby.memeSourceChoice === "local") {
+      const [url] = await getRandomLocalMemes(excluded, 1);
+      return url ?? null;
+    }
+    if (lobby.memeSourceChoice === "uploads") {
+      const pool = getUploadPool(lobby).filter((u) => !excluded.has(u));
+      if (pool.length === 0) return null;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    const [url] = await getRandomGiphyMemes(excluded, 1);
+    return url ?? null;
+  } catch {
+    try {
+      const [url] = await getRandomGiphyMemes(excluded, 1);
+      return url ?? null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+export async function requestMemeOptionForPlayer(lobby: Lobby, socketId: string): Promise<string | null> {
+  if (lobby.phase !== "own_meme_pick") return null;
+  if (!lobby.players.get(socketId)) return null;
+  return requestMemeOption(lobby);
+}
+
+export function submitOwnMeme(io: GameServer, lobby: Lobby, socketId: string, url: string): void {
+  if (lobby.phase !== "own_meme_pick") return;
+  if (!lobby.players.get(socketId)) return;
+  lobby.ownMemePicks.set(socketId, url);
+
+  const allPicked = connectedPlayers(lobby).every((p) => lobby.ownMemePicks.has(p.id));
+  if (allPicked) {
+    resolveOwnMemePick(io, lobby).catch((err) => console.error("Failed to resolve own-meme pick:", err));
+  }
+}
+
+async function resolveOwnMemePick(io: GameServer, lobby: Lobby): Promise<void> {
+  if (lobby.phase !== "own_meme_pick") return;
+  lobby.activeTimer?.cancel();
+  lobby.activeTimer = null;
+
+  for (const player of connectedPlayers(lobby)) {
+    if (lobby.ownMemePicks.has(player.id)) continue;
+    const fallback = await requestMemeOption(lobby);
+    if (fallback) lobby.ownMemePicks.set(player.id, fallback);
+  }
+
+  const submitDeadlineTs = beginSubmissionPhase(lobby);
+  lobby.currentMemeUrl = null;
+  lobby.playerMemeUrls = new Map();
+
+  for (const player of connectedPlayers(lobby)) {
+    const memeUrl = lobby.ownMemePicks.get(player.id);
+    if (!memeUrl) continue;
+    lobby.usedMemeUrls.add(memeUrl);
+    lobby.playerMemeUrls.set(player.id, memeUrl);
+    io.to(player.id).emit("round-started", {
+      roundNumber: lobby.currentRoundNumber,
+      memeUrl,
+      submitDeadlineTs,
+    });
+  }
+
+  scheduleTimer(lobby, lobby.settings.submitSeconds * 1000, () => closeSubmissions(io, lobby));
 }
 
 export function tryCloseSubmissionsEarly(io: GameServer, lobby: Lobby): void {

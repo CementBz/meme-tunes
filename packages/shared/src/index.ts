@@ -10,6 +10,10 @@ export interface Player {
 export type LobbyPhase =
   | "waiting"
   | "collecting_uploads"
+  | "vote_meme_source"
+  | "vote_meme_text"
+  | "vote_meme_mode"
+  | "own_meme_pick"
   | "round_meme_reveal"
   | "community_vote"
   | "round_submitting"
@@ -34,6 +38,9 @@ export interface Submission {
   downVotes: string[];
   neutralVotes: string[];
   fireVotes: string[];
+  memeUrl: string;
+  memeText: string | null;
+  memeTextPosition: "top" | "bottom" | null;
 }
 
 export interface RoundSummary {
@@ -56,8 +63,6 @@ export interface LobbySettings {
   memePickSeconds: number;
   playbackSeconds: number;
   anonymousVoting: boolean;
-  memeSource: MemeSourceType;
-  songHints: boolean;
 }
 
 export const DEFAULT_SETTINGS: LobbySettings = {
@@ -66,9 +71,15 @@ export const DEFAULT_SETTINGS: LobbySettings = {
   memePickSeconds: 15,
   playbackSeconds: 10,
   anonymousVoting: true,
-  memeSource: "uploads",
-  songHints: false,
 };
+
+export interface TripleVoteOption {
+  key: string;
+  title: string;
+  description: string;
+}
+
+export type TripleVoteKind = "meme_source" | "meme_text" | "meme_mode";
 
 export type NumericSettingKey = "totalRounds" | "submitSeconds" | "memePickSeconds" | "playbackSeconds";
 
@@ -91,6 +102,8 @@ export const COMMUNITY_VOTE_SECONDS = 15;
 export const EXTRA_TIME_SECONDS = 20;
 export const EXTRA_TIME_TRIGGER_THRESHOLD_SECONDS = 20;
 export const EXTRA_TIME_VOTE_WINDOW_SECONDS = 7;
+export const TRIPLE_VOTE_SECONDS = 7;
+export const OWN_MEME_PICK_SECONDS = 10;
 
 // Client -> Server events
 export interface ClientToServerEvents {
@@ -112,6 +125,9 @@ export interface ClientToServerEvents {
   "search-deezer": (query: string, ack: (res: PreviewSearchResult[]) => void) => void;
   "submit-meme-pick": (memeIndex: number) => void;
   "reroll-memes": () => void;
+  "submit-triple-vote": (kind: TripleVoteKind, optionKey: string) => void;
+  "request-meme-option": (ack: (url: string | null) => void) => void;
+  "submit-own-meme": (url: string) => void;
   "submit-song": (submission: {
     source: SongSourceType;
     videoId: string | null;
@@ -120,6 +136,8 @@ export interface ClientToServerEvents {
     channel: string;
     thumbnailUrl: string;
     startSeconds: number;
+    memeText: string | null;
+    memeTextPosition: "top" | "bottom" | null;
   }) => void;
   "submit-vote": (submissionId: string, vote: "up" | "down" | "meh") => void;
   "submit-fire-vote": (submissionId: string) => void;
@@ -187,6 +205,9 @@ export interface ServerToClientEvents {
   "extra-time-started": (data: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number }) => void;
   "extra-time-updated": (data: { yesVotes: number; eligibleVoters: number }) => void;
   "extra-time-resolved": (data: { granted: boolean }) => void;
+  "triple-vote-started": (data: { kind: TripleVoteKind; options: TripleVoteOption[]; voteDeadlineTs: number }) => void;
+  "triple-vote-resolved": (data: { kind: TripleVoteKind; winningKey: string }) => void;
+  "own-meme-pick-started": (data: { deadlineTs: number }) => void;
 }
 
 export interface GameSnapshot {

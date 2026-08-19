@@ -1,4 +1,4 @@
-import type { LobbyPhase, LobbySettings, Player, Submission } from "@meme-tunes/shared";
+import type { LobbyPhase, LobbySettings, MemeSourceType, Player, Submission, TripleVoteKind, TripleVoteOption } from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import type { PausableTimer } from "./pausableTimer.js";
 
@@ -33,6 +33,15 @@ export interface Lobby {
   voteDeadlineTs: number | null;
   fireVoteUsedBy: Set<string>;
   extraTimeRequest: ExtraTimeRequestState | null;
+  memeSourceChoice: MemeSourceType;
+  textOnMemeAllowed: boolean;
+  memeMode: "shared" | "individual";
+  tripleVoteKind: TripleVoteKind | null;
+  tripleVoteOptions: TripleVoteOption[];
+  tripleVotes: Map<string, string>;
+  tripleVoteResolve: ((winningKey: string) => void) | null;
+  ownMemePicks: Map<string, string>;
+  playerMemeUrls: Map<string, string>;
 }
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L to avoid ambiguity
@@ -74,6 +83,15 @@ export function createLobby(hostSocketId: string, hostName: string): Lobby {
     voteDeadlineTs: null,
     fireVoteUsedBy: new Set(),
     extraTimeRequest: null,
+    memeSourceChoice: "uploads",
+    textOnMemeAllowed: false,
+    memeMode: "shared",
+    tripleVoteKind: null,
+    tripleVoteOptions: [],
+    tripleVotes: new Map(),
+    tripleVoteResolve: null,
+    ownMemePicks: new Map(),
+    playerMemeUrls: new Map(),
   };
   lobbies.set(code, lobby);
   socketToLobby.set(hostSocketId, code);

@@ -37,6 +37,9 @@ import {
   requestExtraTime,
   voteExtraTime,
   buildSnapshot,
+  submitTripleVote,
+  requestMemeOptionForPlayer,
+  submitOwnMeme,
 } from "./gameEngine.js";
 import { registerUploadRoute } from "./upload.js";
 import { LOCAL_MEMES_DIR, getBackgroundImagePool } from "./memes.js";
@@ -77,14 +80,6 @@ function clampSettings(update: Partial<LobbySettings>): Partial<LobbySettings> {
 
   if (typeof update.anonymousVoting === "boolean") {
     clamped.anonymousVoting = update.anonymousVoting;
-  }
-
-  if (update.memeSource === "giphy" || update.memeSource === "local" || update.memeSource === "uploads") {
-    clamped.memeSource = update.memeSource;
-  }
-
-  if (typeof update.songHints === "boolean") {
-    clamped.songHints = update.songHints;
   }
 
   return clamped;
@@ -175,6 +170,29 @@ io.on("connection", (socket) => {
     submitCommunityVote(io, lobby, socket.id, optionIndex);
   });
 
+  socket.on("submit-triple-vote", (kind, optionKey) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    submitTripleVote(io, lobby, socket.id, kind, optionKey);
+  });
+
+  socket.on("request-meme-option", (ack) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) {
+      ack(null);
+      return;
+    }
+    requestMemeOptionForPlayer(lobby, socket.id)
+      .then((url) => ack(url))
+      .catch(() => ack(null));
+  });
+
+  socket.on("submit-own-meme", (url) => {
+    const lobby = getLobbyBySocket(socket.id);
+    if (!lobby) return;
+    submitOwnMeme(io, lobby, socket.id, url);
+  });
+
   socket.on("submit-song", (submission) => {
     const lobby = getLobbyBySocket(socket.id);
     if (!lobby || lobby.phase !== "round_submitting") return;
@@ -200,6 +218,9 @@ io.on("connection", (socket) => {
       downVotes: [],
       neutralVotes: [],
       fireVotes: [],
+      memeUrl: lobby.playerMemeUrls.get(socket.id) ?? lobby.currentMemeUrl ?? "",
+      memeText: lobby.textOnMemeAllowed ? submission.memeText : null,
+      memeTextPosition: lobby.textOnMemeAllowed ? submission.memeTextPosition : null,
     });
 
     tryCloseSubmissionsEarly(io, lobby);

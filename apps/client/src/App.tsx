@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { LeaderboardEntry, LobbySettings, Player, SongSourceType, YoutubeSearchResult } from "@meme-tunes/shared";
+import type {
+  LeaderboardEntry,
+  LobbySettings,
+  Player,
+  SongSourceType,
+  TripleVoteKind,
+  TripleVoteOption,
+  YoutubeSearchResult,
+} from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import { socket } from "./socket";
 import { CommunityVoteView } from "./components/CommunityVoteView";
@@ -12,11 +20,13 @@ import { LobbyRoom } from "./components/LobbyRoom";
 import { MemePickView } from "./components/MemePickView";
 import { MemeUploadView } from "./components/MemeUploadView";
 import { MusicPlayer } from "./components/MusicPlayer";
+import { OwnMemePickView } from "./components/OwnMemePickView";
 import { PickerIndicator } from "./components/PickerIndicator";
 import { RoundMusic } from "./components/RoundMusic";
 import { RulesPanel } from "./components/RulesPanel";
 import { RoundView } from "./components/RoundView";
 import { PlaybackView } from "./components/PlaybackView";
+import { TripleVoteView } from "./components/TripleVoteView";
 import type { SongSubmission } from "./types";
 import "./App.css";
 
@@ -120,6 +130,14 @@ function App() {
   const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
   const [fireVoteUsedThisRound, setFireVoteUsedThisRound] = useState(false);
   const [reconnecting, setReconnecting] = useState(() => loadStoredSession() !== null);
+  const [tripleVoteData, setTripleVoteData] = useState<{
+    kind: TripleVoteKind;
+    options: TripleVoteOption[];
+    voteDeadlineTs: number;
+  } | null>(null);
+  const [tripleVotedKey, setTripleVotedKey] = useState<string | null>(null);
+  const [tripleResolvedKey, setTripleResolvedKey] = useState<string | null>(null);
+  const [ownMemePickData, setOwnMemePickData] = useState<{ deadlineTs: number } | null>(null);
   const [extraTimeState, setExtraTimeState] = useState<{
     voteDeadlineTs: number;
     yesVotes: number;
@@ -195,13 +213,39 @@ function App() {
       setGameStarted(true);
       setGameStarting(true);
     };
+    const onTripleVoteStarted = (data: { kind: TripleVoteKind; options: TripleVoteOption[]; voteDeadlineTs: number }) => {
+      setGameStarting(false);
+      setTripleVoteData(data);
+      setTripleVotedKey(null);
+      setTripleResolvedKey(null);
+      setOwnMemePickData(null);
+      setUploadDeadlineTs(null);
+    };
+    const onTripleVoteResolved = (data: { kind: TripleVoteKind; winningKey: string }) => {
+      setTripleResolvedKey(data.winningKey);
+    };
+    const onOwnMemePickStarted = (data: { deadlineTs: number }) => {
+      setGameStarting(false);
+      setTripleVoteData(null);
+      setOwnMemePickData(data);
+      setUploadDeadlineTs(null);
+      setCommunityVoteData(null);
+      setMemePickData(null);
+      setRoundData(null);
+      setNowPlaying(null);
+      setSongResult(null);
+      setRoundLeaderboard(null);
+    };
     const onUploadsPhaseStarted = (data: { deadlineTs: number }) => {
       setGameStarting(false);
+      setTripleVoteData(null);
       setUploadDeadlineTs(data.deadlineTs);
       setRoundLeaderboard(null);
     };
     const onCommunityVoteStarted = (data: CommunityVoteData) => {
       setGameStarting(false);
+      setTripleVoteData(null);
+      setOwnMemePickData(null);
       setUploadDeadlineTs(null);
       setCommunityVoteData(data);
       setRoundData(null);
@@ -211,6 +255,8 @@ function App() {
     };
     const onMemePickStarted = (data: MemePickData) => {
       setGameStarting(false);
+      setTripleVoteData(null);
+      setOwnMemePickData(null);
       setMemePickData(data);
       setRoundData(null);
       setNowPlaying(null);
@@ -218,6 +264,7 @@ function App() {
       setRoundLeaderboard(null);
     };
     const onRoundStarted = (data: RoundData) => {
+      setOwnMemePickData(null);
       setMemePickData(null);
       setCommunityVoteData(null);
       setUploadDeadlineTs(null);
@@ -295,6 +342,9 @@ function App() {
     socket.on("lobby-updated", onLobbyUpdated);
     socket.on("settings-updated", onSettingsUpdated);
     socket.on("game-starting", onGameStarting);
+    socket.on("triple-vote-started", onTripleVoteStarted);
+    socket.on("triple-vote-resolved", onTripleVoteResolved);
+    socket.on("own-meme-pick-started", onOwnMemePickStarted);
     socket.on("uploads-phase-started", onUploadsPhaseStarted);
     socket.on("community-vote-started", onCommunityVoteStarted);
     socket.on("meme-pick-started", onMemePickStarted);
@@ -317,6 +367,9 @@ function App() {
       socket.off("lobby-updated", onLobbyUpdated);
       socket.off("settings-updated", onSettingsUpdated);
       socket.off("game-starting", onGameStarting);
+      socket.off("triple-vote-started", onTripleVoteStarted);
+      socket.off("triple-vote-resolved", onTripleVoteResolved);
+      socket.off("own-meme-pick-started", onOwnMemePickStarted);
       socket.off("uploads-phase-started", onUploadsPhaseStarted);
       socket.off("community-vote-started", onCommunityVoteStarted);
       socket.off("meme-pick-started", onMemePickStarted);
@@ -369,6 +422,12 @@ function App() {
     socket.emit("start-game");
   };
 
+  const handleTripleVote = (key: string) => {
+    if (!tripleVoteData || tripleVotedKey) return;
+    socket.emit("submit-triple-vote", tripleVoteData.kind, key);
+    setTripleVotedKey(key);
+  };
+
   const handleMemePick = (index: number) => {
     socket.emit("submit-meme-pick", index);
   };
@@ -386,7 +445,9 @@ function App() {
   };
 
   const handleSongSubmit = (data: SongSubmission) => {
-    socket.emit("submit-song", data);
+    // Meme text/position is wired up once MemeTextOverlay lands (M4 of the
+    // UI overhaul); until then every submission just carries no text.
+    socket.emit("submit-song", { ...data, memeText: null, memeTextPosition: null });
     setHasSubmitted(true);
   };
 
@@ -441,6 +502,10 @@ function App() {
     setExtraTimeResult(null);
     setHasRequestedExtraTime(false);
     setHasVotedExtraTime(false);
+    setTripleVoteData(null);
+    setTripleVotedKey(null);
+    setTripleResolvedKey(null);
+    setOwnMemePickData(null);
     setSettings(DEFAULT_SETTINGS);
   };
 
@@ -522,6 +587,18 @@ function App() {
           onReroll={handleRerollMemes}
         />
       );
+    } else if (tripleVoteData) {
+      screen = (
+        <TripleVoteView
+          options={tripleVoteData.options}
+          voteDeadlineTs={tripleVoteData.voteDeadlineTs}
+          votedKey={tripleVotedKey}
+          resolvedKey={tripleResolvedKey}
+          onVote={handleTripleVote}
+        />
+      );
+    } else if (ownMemePickData) {
+      screen = <OwnMemePickView deadlineTs={ownMemePickData.deadlineTs} />;
     } else if (roundLeaderboard) {
       screen = <LeaderboardView entries={roundLeaderboard} roundNumber={currentRoundNumber} />;
     } else if (gameStarting) {
