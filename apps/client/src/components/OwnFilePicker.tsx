@@ -65,6 +65,8 @@ export function OwnFilePicker({ onSubmit }: OwnFilePickerProps) {
         channel: "Eigene Datei",
         thumbnailUrl: "",
         startSeconds,
+        memeText: null,
+        memeTextPosition: null,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");

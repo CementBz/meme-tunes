@@ -57,7 +57,7 @@ export function PreviewTab({ source, hint, search, previewVolume, onPreviewVolum
   const maxStart = Math.max(0, previewDuration - 10);
 
   return (
-    <>
+    <div className="browser-tab-content">
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <input
           type="text"
@@ -142,6 +142,8 @@ export function PreviewTab({ source, hint, search, previewVolume, onPreviewVolum
                   channel: selected.artist,
                   thumbnailUrl: selected.artworkUrl,
                   startSeconds,
+                  memeText: null,
+                  memeTextPosition: null,
                 })
               }
             >
@@ -153,6 +155,6 @@ export function PreviewTab({ source, hint, search, previewVolume, onPreviewVolum
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -748,6 +748,8 @@ export function buildSnapshot(lobby: Lobby, playerId: string): GameSnapshot {
     uploadDeadlineTs: lobby.phase === "collecting_uploads" ? lobby.uploadDeadlineTs : null,
     nowPlaying,
     votedSubmissionIds,
+    submittedPlayerIds: lobby.currentSubmissions.map((s) => s.playerId),
+    textOnMemeAllowed: lobby.textOnMemeAllowed,
     fireVoteUsed: lobby.fireVoteUsedBy.has(playerId),
     extraTimeState,
     roundLeaderboard,

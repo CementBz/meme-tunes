@@ -223,6 +223,7 @@ io.on("connection", (socket) => {
       memeTextPosition: lobby.textOnMemeAllowed ? submission.memeTextPosition : null,
     });
 
+    io.to(lobby.code).emit("submission-received", socket.id);
     tryCloseSubmissionsEarly(io, lobby);
   });
 

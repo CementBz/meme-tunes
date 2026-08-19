@@ -208,6 +208,7 @@ export interface ServerToClientEvents {
   "triple-vote-started": (data: { kind: TripleVoteKind; options: TripleVoteOption[]; voteDeadlineTs: number }) => void;
   "triple-vote-resolved": (data: { kind: TripleVoteKind; winningKey: string }) => void;
   "own-meme-pick-started": (data: { deadlineTs: number }) => void;
+  "submission-received": (playerId: string) => void;
 }
 
 export interface GameSnapshot {
@@ -239,6 +240,8 @@ export interface GameSnapshot {
     thumbnailUrl: string;
   } | null;
   votedSubmissionIds: string[];
+  submittedPlayerIds: string[];
+  textOnMemeAllowed: boolean;
   fireVoteUsed: boolean;
   extraTimeState: { voteDeadlineTs: number; yesVotes: number; eligibleVoters: number } | null;
   roundLeaderboard: LeaderboardEntry[] | null;

@@ -6,7 +6,6 @@ import type {
   SongSourceType,
   TripleVoteKind,
   TripleVoteOption,
-  YoutubeSearchResult,
 } from "@meme-tunes/shared";
 import { DEFAULT_SETTINGS } from "@meme-tunes/shared";
 import { socket } from "./socket";
@@ -127,7 +126,9 @@ function App() {
   const [paused, setPaused] = useState(false);
   const [uploadDeadlineTs, setUploadDeadlineTs] = useState<number | null>(null);
   const [communityVoteData, setCommunityVoteData] = useState<CommunityVoteData | null>(null);
-  const [songHints, setSongHints] = useState<YoutubeSearchResult[]>([]);
+  const [previewVolume, setPreviewVolume] = useState(0.5);
+  const [submittedPlayerIds, setSubmittedPlayerIds] = useState<Set<string>>(new Set());
+  const [textOnMemeAllowed, setTextOnMemeAllowed] = useState(false);
   const [fireVoteUsedThisRound, setFireVoteUsedThisRound] = useState(false);
   const [reconnecting, setReconnecting] = useState(() => loadStoredSession() !== null);
   const [tripleVoteData, setTripleVoteData] = useState<{
@@ -197,6 +198,8 @@ function App() {
       setUploadDeadlineTs(snapshot.uploadDeadlineTs);
       setNowPlaying(snapshot.nowPlaying);
       setVotedSubmissionIds(new Set(snapshot.votedSubmissionIds));
+      setSubmittedPlayerIds(new Set(snapshot.submittedPlayerIds));
+      setTextOnMemeAllowed(snapshot.textOnMemeAllowed);
       setFireVoteUsedThisRound(snapshot.fireVoteUsed);
       setExtraTimeState(snapshot.extraTimeState);
       setRoundLeaderboard(snapshot.roundLeaderboard);
@@ -223,6 +226,10 @@ function App() {
     };
     const onTripleVoteResolved = (data: { kind: TripleVoteKind; winningKey: string }) => {
       setTripleResolvedKey(data.winningKey);
+      if (data.kind === "meme_text") setTextOnMemeAllowed(data.winningKey === "yes");
+    };
+    const onSubmissionReceived = (playerId: string) => {
+      setSubmittedPlayerIds((prev) => new Set(prev).add(playerId));
     };
     const onOwnMemePickStarted = (data: { deadlineTs: number }) => {
       setGameStarting(false);
@@ -268,6 +275,7 @@ function App() {
       setMemePickData(null);
       setCommunityVoteData(null);
       setUploadDeadlineTs(null);
+      setSubmittedPlayerIds(new Set());
       setMusicOn(true);
       setRoundData(data);
       setCurrentRoundNumber(data.roundNumber);
@@ -275,16 +283,12 @@ function App() {
       setHasSubmitted(false);
       setNowPlaying(null);
       setSongResult(null);
-      setSongHints([]);
       setVotedSubmissionIds(new Set());
       setFireVoteUsedThisRound(false);
       setExtraTimeState(null);
       setExtraTimeResult(null);
       setHasRequestedExtraTime(false);
       setHasVotedExtraTime(false);
-    };
-    const onSongHints = (data: { roundNumber: number; hints: YoutubeSearchResult[] }) => {
-      setSongHints(data.hints);
     };
     const onSubmissionsClosed = () => setSubmissionsClosed(true);
     const onNowPlaying = (data: NowPlaying) => {
@@ -349,7 +353,7 @@ function App() {
     socket.on("community-vote-started", onCommunityVoteStarted);
     socket.on("meme-pick-started", onMemePickStarted);
     socket.on("round-started", onRoundStarted);
-    socket.on("song-hints", onSongHints);
+    socket.on("submission-received", onSubmissionReceived);
     socket.on("submissions-closed", onSubmissionsClosed);
     socket.on("now-playing", onNowPlaying);
     socket.on("song-results", onSongResults);
@@ -374,7 +378,7 @@ function App() {
       socket.off("community-vote-started", onCommunityVoteStarted);
       socket.off("meme-pick-started", onMemePickStarted);
       socket.off("round-started", onRoundStarted);
-      socket.off("song-hints", onSongHints);
+      socket.off("submission-received", onSubmissionReceived);
       socket.off("submissions-closed", onSubmissionsClosed);
       socket.off("now-playing", onNowPlaying);
       socket.off("song-results", onSongResults);
@@ -445,9 +449,7 @@ function App() {
   };
 
   const handleSongSubmit = (data: SongSubmission) => {
-    // Meme text/position is wired up once MemeTextOverlay lands (M4 of the
-    // UI overhaul); until then every submission just carries no text.
-    socket.emit("submit-song", { ...data, memeText: null, memeTextPosition: null });
+    socket.emit("submit-song", data);
     setHasSubmitted(true);
   };
 
@@ -496,7 +498,6 @@ function App() {
     setPaused(false);
     setUploadDeadlineTs(null);
     setCommunityVoteData(null);
-    setSongHints([]);
     setFireVoteUsedThisRound(false);
     setExtraTimeState(null);
     setExtraTimeResult(null);
@@ -506,8 +507,12 @@ function App() {
     setTripleVotedKey(null);
     setTripleResolvedKey(null);
     setOwnMemePickData(null);
+    setSubmittedPlayerIds(new Set());
+    setTextOnMemeAllowed(false);
     setSettings(DEFAULT_SETTINGS);
   };
+
+  const isHost = players.find((p) => p.id === myPlayerId)?.isHost ?? false;
 
   let screen;
   if (reconnecting) {
@@ -549,7 +554,7 @@ function App() {
           submissionsClosed={submissionsClosed}
           hasSubmitted={hasSubmitted}
           paused={paused}
-          songHints={songHints}
+          textOnMemeAllowed={textOnMemeAllowed}
           onSubmit={handleSongSubmit}
           extraTimeState={extraTimeState}
           extraTimeResult={extraTimeResult}
@@ -557,6 +562,17 @@ function App() {
           hasVotedExtraTime={hasVotedExtraTime}
           onRequestExtraTime={handleRequestExtraTime}
           onVoteExtraTime={handleVoteExtraTime}
+          players={players}
+          submittedPlayerIds={submittedPlayerIds}
+          isHost={isHost}
+          settings={settings}
+          onUpdateSettings={handleUpdateSettings}
+          musicVolume={musicVolume}
+          onMusicVolumeChange={setMusicVolume}
+          hudScale={hudScale}
+          onHudScaleChange={setHudScale}
+          previewVolume={previewVolume}
+          onPreviewVolumeChange={setPreviewVolume}
         />
       );
     } else if (communityVoteData) {
