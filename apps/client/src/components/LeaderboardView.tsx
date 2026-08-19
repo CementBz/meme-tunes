@@ -22,7 +22,20 @@ export function LeaderboardView({ entries, roundNumber, roundSubmissions, isHost
   return (
     <section id="center">
       <PhotoCollageBackground blurred animated={false} />
-      <div className="hud-scale-content" style={{ maxWidth: "90vw" }}>
+      <div
+        className="hud-scale-content"
+        style={{
+          maxWidth: "90vw",
+          borderStyle: "solid",
+          borderWidth: "28px",
+          borderImageSource: "url(/dragon-ui/20240707dragon9SlicesB.png)",
+          borderImageSlice: "24 fill",
+          borderImageWidth: "28px",
+          borderImageRepeat: "stretch",
+          imageRendering: "pixelated",
+          padding: "20px",
+        }}
+      >
         <h1 style={{ fontSize: "3rem" }}>Rangliste nach Runde {roundNumber}</h1>
         <table className="leaderboard-table" style={{ fontSize: "1.3rem", margin: "0 auto" }}>
           <thead>

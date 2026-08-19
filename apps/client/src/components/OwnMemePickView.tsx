@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
-import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { DragonFrameBackground } from "./DragonFrameBackground";
 
 interface OwnMemePickViewProps {
   deadlineTs: number;
@@ -43,7 +43,7 @@ export function OwnMemePickView({ deadlineTs }: OwnMemePickViewProps) {
 
   return (
     <section id="center">
-      <PhotoCollageBackground blurred animated={false} />
+      <DragonFrameBackground />
       <div className="hud-scale-content">
         <h1>Wähle dein eigenes Meme</h1>
         <p>Verbleibende Zeit: {remainingSeconds}s</p>

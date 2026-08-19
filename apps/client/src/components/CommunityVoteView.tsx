@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MemeMedia } from "./MemeMedia";
-import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { DragonFrameBackground } from "./DragonFrameBackground";
 
 interface CommunityVoteViewProps {
   roundNumber: number;
@@ -44,7 +44,7 @@ export function CommunityVoteView({
 
   return (
     <section id="center">
-      <PhotoCollageBackground blurred animated={false} />
+      <DragonFrameBackground />
       <div className="hud-scale-content">
         <h1>
           Runde {roundNumber} / {totalRounds} — welches Bild?

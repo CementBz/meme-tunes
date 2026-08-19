@@ -28,7 +28,21 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
       <div className="hud-scale-content">
         {step === "name" ? (
           <>
-            <h1 style={{ fontSize: "3.5rem", margin: "0 0 8px" }}>Dein Name</h1>
+            <div
+              style={{
+                backgroundImage: "url(/dragon-ui/20240707dragonHeaderB.png)",
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+                imageRendering: "pixelated",
+                width: "min(85vw, 480px)",
+                aspectRatio: "3 / 1",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <h1 style={{ fontSize: "2rem", margin: 0, color: "#08222a" }}>Dein Name</h1>
+            </div>
             <input
               type="text"
               className="flat-input"
@@ -54,12 +68,55 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                 playSfx("/lobby-join.wav");
                 onCreate(name.trim());
               }}
+              style={{
+                backgroundColor: "transparent",
+                backgroundImage: "url(/dragon-ui/20240709dragonBarB.png)",
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+                imageRendering: "pixelated",
+                border: "none",
+                borderRadius: 0,
+                boxShadow: "none",
+                width: "240px",
+                height: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                color: "#ffffff",
+                textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
+              }}
             >
               Lobby erstellen
             </button>
 
             {!showJoinField ? (
-              <button type="button" onClick={() => setShowJoinField(true)}>
+              <button
+                type="button"
+                onClick={() => setShowJoinField(true)}
+                style={{
+                  backgroundColor: "transparent",
+                  backgroundImage: "url(/dragon-ui/20240709dragonBarC.png)",
+                  backgroundSize: "100% 100%",
+                  backgroundRepeat: "no-repeat",
+                  imageRendering: "pixelated",
+                  border: "none",
+                  borderRadius: 0,
+                  boxShadow: "none",
+                  width: "240px",
+                  height: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
+                }}
+              >
                 Lobby beitreten
               </button>
             ) : (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { TripleVoteOption } from "@meme-tunes/shared";
-import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { DragonFrameBackground } from "./DragonFrameBackground";
 
 interface TripleVoteViewProps {
   options: TripleVoteOption[];
@@ -24,7 +24,7 @@ export function TripleVoteView({ options, voteDeadlineTs, votedKey, resolvedKey,
 
   return (
     <section id="center">
-      <PhotoCollageBackground blurred animated={false} />
+      <DragonFrameBackground />
       <div className="hud-scale-content">
         <h1>Stimme ab</h1>
         <p>{remainingSeconds}s</p>
