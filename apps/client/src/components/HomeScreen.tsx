@@ -30,6 +30,7 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
           <>
             <input
               type="text"
+              className="no-focus-outline"
               placeholder="Dein Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -82,8 +83,9 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 lineHeight: 1,
-                fontSize: "0.95rem",
-                fontWeight: 700,
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: "0.6rem",
+                fontWeight: 400,
                 color: "#ffffff",
                 textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
               }}
@@ -110,8 +112,9 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                   alignItems: "center",
                   justifyContent: "center",
                   lineHeight: 1,
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: "0.6rem",
+                  fontWeight: 400,
                   color: "#ffffff",
                   textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
                 }}

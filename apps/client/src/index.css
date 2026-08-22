@@ -228,6 +228,10 @@ input[type="email"]:focus {
   outline-offset: 1px;
 }
 
+input.no-focus-outline:focus {
+  outline: none;
+}
+
 input[type="range"] {
   accent-color: var(--accent);
 }

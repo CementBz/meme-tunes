@@ -111,7 +111,7 @@ export function MusicPlayer({
             border: "none",
             borderRadius: 0,
             boxShadow: "none",
-            padding: "4px 26px 22px",
+            padding: "9px 26px 17px",
             minWidth: "170px",
             minHeight: "44px",
             display: "flex",
