@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { PIXEL_FONT } from "../pixelFont";
 
 interface MemeTextOverlayProps {
@@ -21,21 +21,52 @@ const TEXT_STYLE: CSSProperties = {
   wordBreak: "break-word",
 };
 
-// Longer text shrinks instead of just wrapping/centering, so it stays within
-// its third (top or bottom) of the meme image instead of growing past it.
-function fontSizeForText(text: string): string {
-  const len = text.length || 1;
-  const vw = Math.max(2.2, Math.min(6, 6 - Math.max(0, len - 16) * 0.13));
-  return `clamp(0.8rem, ${vw}vw, 2.5rem)`;
-}
+const MAX_FONT_PX = 56;
+const MIN_FONT_PX = 9;
+const FONT_STEP_PX = 1;
 
 export function MemeTextOverlay({ text, onTextChange, position, onPositionChange, readOnly = false }: MemeTextOverlayProps) {
   const [editing, setEditing] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const textRef = useRef<HTMLDivElement & HTMLInputElement>(null!);
+  const [fontSize, setFontSize] = useState(MAX_FONT_PX);
+
+  // Shrinks the text until it actually fits within its third (top or
+  // bottom) of the meme image, instead of guessing from character count —
+  // re-measured whenever the text, layout, or the image itself (once it
+  // finishes loading) changes size.
+  useEffect(() => {
+    const container = containerRef.current;
+    const parent = container?.parentElement;
+    if (!container || !parent) return;
+
+    const fit = () => {
+      const textEl = textRef.current;
+      if (!textEl) return;
+      const maxHeight = parent.clientHeight / 3;
+      const maxWidth = parent.clientWidth * 0.92;
+      if (maxHeight <= 0 || maxWidth <= 0) return;
+
+      let size = MAX_FONT_PX;
+      textEl.style.fontSize = `${size}px`;
+      while (size > MIN_FONT_PX && (textEl.scrollHeight > maxHeight || textEl.scrollWidth > maxWidth)) {
+        size -= FONT_STEP_PX;
+        textEl.style.fontSize = `${size}px`;
+      }
+      setFontSize(size);
+    };
+
+    fit();
+    const resizeObserver = new ResizeObserver(fit);
+    resizeObserver.observe(parent);
+    return () => resizeObserver.disconnect();
+  }, [text, position, editing]);
 
   if (readOnly && !text) return null;
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: "absolute",
         left: "4%",
@@ -50,6 +81,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
     >
       {editing && onTextChange ? (
         <input
+          ref={textRef}
           type="text"
           autoFocus
           value={text}
@@ -58,7 +90,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
           onKeyDown={(e) => e.key === "Enter" && setEditing(false)}
           style={{
             ...TEXT_STYLE,
-            fontSize: fontSizeForText(text),
+            fontSize: `${fontSize}px`,
             background: "rgba(0,0,0,0.35)",
             border: "none",
             textAlign: "center",
@@ -69,14 +101,15 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
         />
       ) : (
         <div
+          ref={textRef}
           onClick={readOnly ? undefined : () => setEditing(true)}
           style={{
             ...TEXT_STYLE,
-            fontSize: fontSizeForText(text),
+            fontSize: `${fontSize}px`,
             opacity: text ? 1 : 0.55,
             cursor: readOnly ? "default" : "text",
             textAlign: "center",
-            maxHeight: "32%",
+            maxHeight: "34%",
             overflow: "hidden",
           }}
         >
