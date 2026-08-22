@@ -85,7 +85,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
           type="text"
           autoFocus
           value={text}
-          onChange={(e) => onTextChange(e.target.value.slice(0, 60))}
+          onChange={(e) => onTextChange(e.target.value)}
           onBlur={() => setEditing(false)}
           onKeyDown={(e) => e.key === "Enter" && setEditing(false)}
           style={{
