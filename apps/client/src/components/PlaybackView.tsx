@@ -91,8 +91,8 @@ export function PlaybackView({
 
       playerRef.current = new YT_API.Player(mountPoint, {
         videoId,
-        width: "1",
-        height: "1",
+        width: "360",
+        height: "203",
         playerVars: { start: Math.floor(startSeconds), autoplay: 1 },
         events: {
           onReady: (e) => {
@@ -151,8 +151,15 @@ export function PlaybackView({
           )}
         </div>
 
-        {/* Audio only: the actual player stays invisible, only the meme image is shown. */}
-        {source === "youtube" && <div ref={wrapperRef} style={{ width: 1, height: 1, overflow: "hidden" }} />}
+        {/* YouTube's Required Minimum Functionality policy requires embedded
+            players to stay visible at 200x200px or larger — shown as its own
+            panel below the meme rather than hidden. */}
+        {source === "youtube" && (
+          <div
+            ref={wrapperRef}
+            style={{ width: "360px", height: "203px", maxWidth: "90vw", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
+          />
+        )}
         {(source === "upload" || source === "itunes" || source === "deezer") && fileUrl && (
           <video
             ref={videoRef}
