@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { TripleVoteOption } from "@meme-tunes/shared";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface TripleVoteViewProps {
   options: TripleVoteOption[];
@@ -26,8 +27,8 @@ export function TripleVoteView({ options, voteDeadlineTs, votedKey, resolvedKey,
     <section id="center">
       <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content">
-        <h1>Stimme ab</h1>
-        <p>{remainingSeconds}s</p>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.4rem" }}>Stimme ab</h1>
+        <p style={{ ...PIXEL_FONT, fontSize: "0.9rem" }}>{remainingSeconds}s</p>
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           {options.map((opt) => {
@@ -41,27 +42,34 @@ export function TripleVoteView({ options, voteDeadlineTs, votedKey, resolvedKey,
                 disabled={votedKey !== null || resolvedKey !== null}
                 style={{
                   width: "220px",
-                  minHeight: "160px",
+                  minHeight: "170px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "0.5rem",
+                  gap: "0.6rem",
                   padding: "20px 16px",
-                  backgroundColor: "#0a0a0a",
-                  backgroundImage: "url(/dragon-ui/20240713dragonEmptyFrame.png)",
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "100% 100%",
+                  borderStyle: "solid",
+                  borderWidth: "10px",
+                  borderImageSource: "url(/dragon-ui/20240713dragonEmptyFrame.png)",
+                  borderImageSlice: "10 fill",
+                  borderImageWidth: "10px",
+                  borderImageRepeat: "stretch",
                   imageRendering: "pixelated",
-                  border: isWinner ? "3px solid #22c55e" : isMine ? "3px solid #fff" : "3px solid transparent",
+                  outline: isWinner ? "3px solid #22c55e" : isMine ? "3px solid #fff" : "3px solid transparent",
+                  outlineOffset: "2px",
                 }}
               >
-                <strong style={{ fontSize: "1.1rem" }}>{opt.title}</strong>
-                <span style={{ fontSize: "0.75rem", fontWeight: 400, opacity: 0.85 }}>{opt.description}</span>
+                <strong style={{ ...PIXEL_FONT, fontSize: "0.75rem", lineHeight: 1.4 }}>{opt.title}</strong>
+                <span style={{ ...PIXEL_FONT, fontSize: "0.55rem", lineHeight: 1.6, fontWeight: 400, opacity: 0.85 }}>
+                  {opt.description}
+                </span>
               </button>
             );
           })}
         </div>
 
-        {resolvedKey && <p>Gewählt: {options.find((o) => o.key === resolvedKey)?.title}</p>}
+        {resolvedKey && (
+          <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>Gewählt: {options.find((o) => o.key === resolvedKey)?.title}</p>
+        )}
       </div>
     </section>
   );

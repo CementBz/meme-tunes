@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface MemeTextOverlayProps {
   text: string;
@@ -88,7 +89,7 @@ export function MemeTextOverlay({ text, onTextChange, position, onPositionChange
           type="button"
           onClick={() => onPositionChange(position === "top" ? "bottom" : "top")}
           title="Position wechseln"
-          style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.7rem", padding: "4px 10px", boxShadow: "none" }}
+          style={{ ...PIXEL_FONT, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.5rem", padding: "4px 10px", boxShadow: "none" }}
         >
           {position === "top" ? "⬇️ Nach unten" : "⬆️ Nach oben"}
         </button>

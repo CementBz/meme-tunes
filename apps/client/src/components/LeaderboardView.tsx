@@ -3,6 +3,7 @@ import type { LeaderboardEntry, RoundSubmissionSummary } from "@meme-tunes/share
 import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface LeaderboardViewProps {
   entries: LeaderboardEntry[];
@@ -36,8 +37,8 @@ export function LeaderboardView({ entries, roundNumber, roundSubmissions, isHost
           padding: "20px",
         }}
       >
-        <h1 style={{ fontSize: "3rem" }}>Rangliste nach Runde {roundNumber}</h1>
-        <table className="leaderboard-table" style={{ fontSize: "1.3rem", margin: "0 auto" }}>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.6rem", lineHeight: 1.8 }}>Rangliste nach Runde {roundNumber}</h1>
+        <table className="leaderboard-table" style={{ ...PIXEL_FONT, fontSize: "0.75rem", margin: "0 auto" }}>
           <thead>
             <tr>
               <th>Platz</th>
@@ -69,24 +70,26 @@ export function LeaderboardView({ entries, roundNumber, roundSubmissions, isHost
           >
             {roundSubmissions.map((s) => (
               <div key={s.playerId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                <strong style={{ fontSize: "0.9rem" }}>{s.playerName}</strong>
+                <strong style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>{s.playerName}</strong>
                 <MemeMedia
                   url={s.memeUrl}
                   alt={`Meme von ${s.playerName}`}
                   style={{ width: "160px", height: "160px", objectFit: "cover", border: "2px solid var(--border)" }}
                 />
-                <span style={{ fontSize: "0.75rem", opacity: 0.8, maxWidth: "160px", textAlign: "center" }}>{s.songTitle}</span>
+                <span style={{ ...PIXEL_FONT, fontSize: "0.5rem", opacity: 0.8, maxWidth: "160px", textAlign: "center" }}>
+                  {s.songTitle}
+                </span>
               </div>
             ))}
           </div>
         )}
 
         {isHost ? (
-          <button type="button" onClick={onForceSkip}>
+          <button type="button" onClick={onForceSkip} style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>
             Weiter ⏭
           </button>
         ) : (
-          <p>Nächste Runde startet gleich…</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Nächste Runde startet gleich…</p>
         )}
       </div>
     </section>

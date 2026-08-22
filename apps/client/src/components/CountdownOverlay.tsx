@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { GAME_START_COUNTDOWN_SECONDS } from "@meme-tunes/shared";
+import { PIXEL_FONT } from "../pixelFont";
 
 function metronomeClick(): void {
   try {
@@ -44,7 +45,7 @@ export function CountdownOverlay() {
   return (
     <section id="center">
       <div className="hud-scale-content">
-        <h1 style={{ fontSize: "8rem" }}>{count > 0 ? count : ""}</h1>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "6rem" }}>{count > 0 ? count : ""}</h1>
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MemeMedia } from "./MemeMedia";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface MemePickViewProps {
   roundNumber: number;
@@ -44,12 +45,12 @@ export function MemePickView({
     <section id="center">
       <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content">
-        <h1>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.1rem", lineHeight: 1.6 }}>
           Runde {roundNumber} / {totalRounds} — welches Meme?
         </h1>
-        <p>Verbleibende Zeit: {remainingSeconds}s</p>
-        {paused && <p>⏸ Pausiert</p>}
-        {!isPicker && <p>{pickerName} wählt gerade das Meme für alle…</p>}
+        <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>Verbleibende Zeit: {remainingSeconds}s</p>
+        {paused && <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>⏸ Pausiert</p>}
+        {!isPicker && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>{pickerName} wählt gerade das Meme für alle…</p>}
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           {memeOptions.map((url, index) => (
@@ -76,7 +77,12 @@ export function MemePickView({
         </div>
 
         {isPicker && (
-          <button type="button" onClick={onReroll} className="pill-badge" style={{ background: "rgba(209, 102, 102, 0.85)", color: "#2b0a0a" }}>
+          <button
+            type="button"
+            onClick={onReroll}
+            className="pill-badge"
+            style={{ ...PIXEL_FONT, fontSize: "0.65rem", background: "rgba(209, 102, 102, 0.85)", color: "#2b0a0a" }}
+          >
             🔄 Anderes Meme
           </button>
         )}

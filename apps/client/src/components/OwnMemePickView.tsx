@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface OwnMemePickViewProps {
   deadlineTs: number;
@@ -45,23 +46,29 @@ export function OwnMemePickView({ deadlineTs }: OwnMemePickViewProps) {
     <section id="center">
       <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content">
-        <h1>Wähle dein eigenes Meme</h1>
-        <p>Verbleibende Zeit: {remainingSeconds}s</p>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.2rem", lineHeight: 1.6 }}>Wähle dein eigenes Meme</h1>
+        <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>Verbleibende Zeit: {remainingSeconds}s</p>
 
         {candidate ? (
           <MemeMedia url={candidate} alt="Meme-Vorschlag" style={{ maxWidth: "50vw", maxHeight: "45vh" }} />
         ) : (
-          <p>{loading ? "Lädt…" : "Kein Bild verfügbar."}</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>{loading ? "Lädt…" : "Kein Bild verfügbar."}</p>
         )}
 
         {locked ? (
-          <p>Gewählt ✅ Warte auf die anderen…</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.7rem" }}>Gewählt ✅ Warte auf die anderen…</p>
         ) : (
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button type="button" onClick={fetchNext} disabled={loading}>
+            <button type="button" onClick={fetchNext} disabled={loading} style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>
               🔄 Nächstes Bild
             </button>
-            <button type="button" className="btn-success" onClick={handleLockIn} disabled={!candidate || loading}>
+            <button
+              type="button"
+              className="btn-success"
+              onClick={handleLockIn}
+              disabled={!candidate || loading}
+              style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}
+            >
               Das nehme ich!
             </button>
           </div>

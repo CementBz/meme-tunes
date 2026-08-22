@@ -1,4 +1,5 @@
 import type { LeaderboardEntry } from "@meme-tunes/shared";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface GameOverViewProps {
   entries: LeaderboardEntry[];
@@ -8,8 +9,8 @@ export function GameOverView({ entries }: GameOverViewProps) {
   return (
     <section id="center">
       <div className="hud-scale-content">
-        <h1>Spiel beendet! 🎉</h1>
-        <table className="leaderboard-table">
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.6rem", lineHeight: 1.8 }}>Spiel beendet! 🎉</h1>
+        <table className="leaderboard-table" style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>
           <thead>
             <tr>
               <th>Platz</th>

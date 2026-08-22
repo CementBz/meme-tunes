@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { playSfx } from "../sfx";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface HomeScreenProps {
   onCreate: (name: string) => void;
@@ -49,18 +50,23 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                 width: "min(85vw, 480px)",
                 aspectRatio: "3 / 1",
                 textAlign: "center",
-                fontSize: "2rem",
-                fontWeight: 700,
+                ...PIXEL_FONT,
+                fontSize: "1.2rem",
                 color: "#08222a",
               }}
             />
-            <button type="button" disabled={!canContinue} onClick={handleNameSubmit} style={{ fontSize: "1.2rem" }}>
+            <button
+              type="button"
+              disabled={!canContinue}
+              onClick={handleNameSubmit}
+              style={{ ...PIXEL_FONT, fontSize: "0.7rem" }}
+            >
               Weiter
             </button>
           </>
         ) : (
           <>
-            <h1>Hallo, {name}!</h1>
+            <h1 style={{ ...PIXEL_FONT, fontSize: "1.4rem", lineHeight: 1.8 }}>Hallo, {name}!</h1>
 
             <button
               type="button"
@@ -83,9 +89,8 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 lineHeight: 1,
-                fontFamily: "'Press Start 2P', monospace",
+                ...PIXEL_FONT,
                 fontSize: "0.6rem",
-                fontWeight: 400,
                 color: "#ffffff",
                 textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
               }}
@@ -132,6 +137,7 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                   maxLength={5}
                   autoFocus
                   onKeyDown={(e) => e.key === "Enter" && code.trim() && onJoin(name.trim(), code.trim())}
+                  style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}
                 />
                 <button
                   type="button"
@@ -140,18 +146,19 @@ export function HomeScreen({ onCreate, onJoin, error }: HomeScreenProps) {
                     playSfx("/lobby-join.wav");
                     onJoin(name.trim(), code.trim());
                   }}
+                  style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}
                 >
                   Beitreten
                 </button>
               </div>
             )}
 
-            {error && <p style={{ color: "crimson" }}>{error}</p>}
+            {error && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem", color: "crimson" }}>{error}</p>}
 
             <button
               type="button"
               onClick={() => setStep("name")}
-              style={{ background: "none", boxShadow: "none", fontSize: "0.8rem", color: "rgba(255,255,255,0.6)" }}
+              style={{ ...PIXEL_FONT, background: "none", boxShadow: "none", fontSize: "0.55rem", color: "rgba(255,255,255,0.6)" }}
             >
               ← Name ändern
             </button>

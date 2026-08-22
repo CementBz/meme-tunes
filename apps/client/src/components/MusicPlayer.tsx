@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface MusicPlayerProps {
   phaseAllowsMusic: boolean;
@@ -118,8 +119,9 @@ export function MusicPlayer({
             alignItems: "center",
             justifyContent: "center",
             lineHeight: 1,
-            fontSize: "0.85rem",
-            fontWeight: 700,
+            ...PIXEL_FONT,
+            fontSize: "0.6rem",
+            fontWeight: 400,
             color: "#ffffff",
             textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
           }}

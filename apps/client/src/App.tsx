@@ -28,6 +28,8 @@ import { PhoneMockup } from "./components/PhoneMockup";
 import { PlaybackView } from "./components/PlaybackView";
 import { TripleVoteView } from "./components/TripleVoteView";
 import type { SongSubmission } from "./types";
+import { PIXEL_FONT } from "./pixelFont";
+import { useIsNarrow } from "./hooks/useIsNarrow";
 import "./App.css";
 
 const SESSION_KEY = "meme-tunes-session";
@@ -151,6 +153,10 @@ function App() {
   const [memePickData, setMemePickData] = useState<MemePickData | null>(null);
   const [pickerAnnounce, setPickerAnnounce] = useState<{ pickerId: string; pickerName: string } | null>(null);
   const pickerAnnounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Rerolling ("Anderes Meme") re-fires meme-pick-started for the same
+  // picker/round — only show the announcement once per picker turn, not on
+  // every reroll.
+  const announcedPickRef = useRef<string | null>(null);
   const [roundData, setRoundData] = useState<RoundData | null>(null);
   const [submissionsClosed, setSubmissionsClosed] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -173,6 +179,8 @@ function App() {
   const [submittedPlayerIds, setSubmittedPlayerIds] = useState<Set<string>>(new Set());
   const [textOnMemeAllowed, setTextOnMemeAllowed] = useState(false);
   const [feedItems, setFeedItems] = useState<{ id: string; text: string }[]>([]);
+  const [phoneExpandedMobile, setPhoneExpandedMobile] = useState(false);
+  const [lastSeenFeedCount, setLastSeenFeedCount] = useState(0);
   const [showRoundEndOverlay, setShowRoundEndOverlay] = useState(false);
   const [roundSubmissions, setRoundSubmissions] = useState<RoundSubmissionSummary[]>([]);
 
@@ -335,9 +343,13 @@ function App() {
       setNowPlaying(null);
       setSongResult(null);
       setRoundLeaderboard(null);
-      if (pickerAnnounceTimeoutRef.current) clearTimeout(pickerAnnounceTimeoutRef.current);
-      setPickerAnnounce({ pickerId: data.pickerId, pickerName: data.pickerName });
-      pickerAnnounceTimeoutRef.current = setTimeout(() => setPickerAnnounce(null), 4000);
+      const announceKey = `${data.roundNumber}:${data.pickerId}`;
+      if (announcedPickRef.current !== announceKey) {
+        announcedPickRef.current = announceKey;
+        if (pickerAnnounceTimeoutRef.current) clearTimeout(pickerAnnounceTimeoutRef.current);
+        setPickerAnnounce({ pickerId: data.pickerId, pickerName: data.pickerName });
+        pickerAnnounceTimeoutRef.current = setTimeout(() => setPickerAnnounce(null), 4000);
+      }
     };
     const onRoundStarted = (data: RoundData) => {
       setOwnMemePickData(null);
@@ -614,7 +626,7 @@ function App() {
     screen = (
       <section id="center">
         <div className="hud-scale-content">
-          <p>Verbinde erneut…</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>Verbinde erneut…</p>
         </div>
       </section>
     );
@@ -625,7 +637,7 @@ function App() {
       screen = (
         <section id="center">
           <div className="hud-scale-content">
-            <h1 style={{ fontSize: "4rem" }}>Zeit abgelaufen</h1>
+            <h1 style={{ ...PIXEL_FONT, fontSize: "2.2rem", lineHeight: 1.8 }}>Zeit abgelaufen</h1>
           </div>
         </section>
       );
@@ -634,7 +646,7 @@ function App() {
       screen = (
         <section id="center">
           <div className="hud-scale-content">
-            <h1 style={{ fontSize: "4.5rem", color: isMe ? "#22c55e" : "#ef4444" }}>
+            <h1 style={{ ...PIXEL_FONT, fontSize: "2.2rem", lineHeight: 1.8, color: isMe ? "#22c55e" : "#ef4444" }}>
               {isMe ? "Du wählst das Meme!" : `${pickerAnnounce.pickerName} wählt das Meme`}
             </h1>
           </div>
@@ -772,6 +784,8 @@ function App() {
   );
   const showPhone = Boolean(lobbyCode && myPlayerId && !reconnecting && !finalLeaderboard);
   const { bottomOffset: phoneBottomOffset, height: phoneHeight } = useBrowserAlignment();
+  const isNarrow = useIsNarrow();
+  const hasUnreadChat = isNarrow && !phoneExpandedMobile && feedItems.length > lastSeenFeedCount;
 
   return (
     <>
@@ -786,9 +800,84 @@ function App() {
       <RoundMusic playing={musicOn && Boolean(roundData) && !nowPlaying && !roundLeaderboard && !finalLeaderboard} />
       {!onLobbyRoomScreen && <RulesPanel />}
       {lobbyCode && <LeaveButton onLeave={handleLeaveLobby} />}
-      {showPhone && (
+      {showPhone && !isNarrow && (
         <div style={{ position: "fixed", bottom: `${phoneBottomOffset}px`, right: "16px", zIndex: 940 }}>
           <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} height={phoneHeight} />
+        </div>
+      )}
+      {showPhone && isNarrow && !phoneExpandedMobile && (
+        <button
+          type="button"
+          onClick={() => {
+            setPhoneExpandedMobile(true);
+            setLastSeenFeedCount(feedItems.length);
+          }}
+          style={{
+            position: "fixed",
+            bottom: "16px",
+            left: "16px",
+            zIndex: 940,
+            width: "52px",
+            height: "52px",
+            borderRadius: "50%",
+            background: "#111",
+            border: "3px solid #333",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+          }}
+        >
+          <span style={{ fontSize: "1.4rem" }}>💬</span>
+          {hasUnreadChat && (
+            <span
+              style={{
+                position: "absolute",
+                top: "2px",
+                right: "2px",
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                background: "#ef4444",
+                border: "2px solid #111",
+              }}
+            />
+          )}
+        </button>
+      )}
+      {showPhone && isNarrow && phoneExpandedMobile && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 960,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setPhoneExpandedMobile(false)}
+        >
+          <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPhoneExpandedMobile(false)}
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: 0,
+                ...PIXEL_FONT,
+                fontSize: "0.55rem",
+                background: "rgba(0,0,0,0.6)",
+                color: "#fff",
+                padding: "8px 12px",
+              }}
+            >
+              ✕ Schließen
+            </button>
+            <PhoneMockup items={feedItems} onSendMessage={handleSendChatMessage} height="min(60vh, 480px)" />
+          </div>
         </div>
       )}
       {screen}
@@ -796,14 +885,14 @@ function App() {
         <button
           type="button"
           onClick={() => setPrankEnabled((v) => !v)}
-          style={{ background: "none", border: "none", boxShadow: "none", padding: 0, color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}
+          style={{ ...PIXEL_FONT, background: "none", border: "none", boxShadow: "none", padding: 0, color: "rgba(255,255,255,0.5)", fontSize: "0.5rem" }}
         >
           {prankEnabled ? "Musik-Prank aus" : "Musik-Prank an"}
         </button>
-        <a href="/privacy" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
+        <a href="/privacy" style={{ ...PIXEL_FONT, color: "rgba(255,255,255,0.5)", fontSize: "0.5rem" }}>
           Datenschutz
         </a>
-        <a href="/terms" style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.7rem" }}>
+        <a href="/terms" style={{ ...PIXEL_FONT, color: "rgba(255,255,255,0.5)", fontSize: "0.5rem" }}>
           Nutzungsbedingungen
         </a>
       </div>

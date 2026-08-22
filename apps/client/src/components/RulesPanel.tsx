@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { PIXEL_FONT } from "../pixelFont";
+import { useIsNarrow } from "../hooks/useIsNarrow";
 
 interface RuleSection {
   title: string;
@@ -24,17 +26,9 @@ const RULE_SECTIONS: RuleSection[] = [
   },
 ];
 
-const NARROW_BREAKPOINT = 700;
-
 export function RulesPanel() {
-  const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_BREAKPOINT);
+  const isNarrow = useIsNarrow();
   const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    const onResize = () => setIsNarrow(window.innerWidth < NARROW_BREAKPOINT);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   if (isNarrow && !expanded) {
     return (
@@ -49,7 +43,8 @@ export function RulesPanel() {
           background: "rgba(0,0,0,0.5)",
           color: "#ffffff",
           padding: "6px 10px",
-          fontSize: "0.75rem",
+          ...PIXEL_FONT,
+          fontSize: "0.6rem",
         }}
       >
         ℹ️ Regeln
@@ -70,8 +65,9 @@ export function RulesPanel() {
         background: "rgba(0,0,0,0.75)",
         padding: "10px 12px",
         color: "rgba(255,255,255,0.6)",
-        fontSize: "0.7rem",
-        lineHeight: 1.4,
+        ...PIXEL_FONT,
+        fontSize: "0.55rem",
+        lineHeight: 1.8,
       }}
     >
       {isNarrow && (
@@ -86,16 +82,18 @@ export function RulesPanel() {
             boxShadow: "none",
             color: "#ffffff",
             padding: "2px 6px",
+            ...PIXEL_FONT,
+            fontSize: "0.6rem",
           }}
         >
           ✕
         </button>
       )}
-      <h2 style={{ fontSize: "0.95rem", color: "#ffffff", margin: "0 0 6px", fontWeight: 700 }}>Spielprinzip</h2>
+      <h2 style={{ ...PIXEL_FONT, fontSize: "0.7rem", color: "#ffffff", margin: "0 0 8px", lineHeight: 1.6 }}>Spielprinzip</h2>
       {RULE_SECTIONS.map((section) => (
-        <div key={section.title} style={{ marginBottom: "6px" }}>
+        <div key={section.title} style={{ marginBottom: "10px" }}>
           <strong style={{ color: "rgba(255,255,255,0.85)" }}>{section.title}</strong>
-          <p style={{ margin: "2px 0 0" }}>{section.text}</p>
+          <p style={{ margin: "4px 0 0" }}>{section.text}</p>
         </div>
       ))}
     </div>

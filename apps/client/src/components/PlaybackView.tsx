@@ -5,6 +5,7 @@ import { socket } from "../socket";
 import { MemeMedia } from "./MemeMedia";
 import { MemeTextOverlay } from "./MemeTextOverlay";
 import { MehIcon, ThumbDownIcon, ThumbUpIcon } from "./ThumbIcons";
+import { PIXEL_FONT } from "../pixelFont";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
 const DEFAULT_VOLUME = 0.5;
@@ -142,7 +143,7 @@ export function PlaybackView({
       />
 
       <div className="hud-scale-content" style={{ position: "relative", zIndex: 1 }}>
-        <h2>{playerName}s Song</h2>
+        <h2 style={{ ...PIXEL_FONT, fontSize: "1rem", lineHeight: 1.8 }}>{playerName}s Song</h2>
         <div style={{ position: "relative", display: "inline-block" }}>
           <MemeMedia url={memeUrl} alt="Meme der Runde" style={{ maxWidth: "85vw", maxHeight: "70vh", borderRadius: 0, display: "block" }} />
           {memeText && (
@@ -173,13 +174,13 @@ export function PlaybackView({
           <button
             type="button"
             onClick={handleStartPlayback}
-            style={{ fontSize: "1.3rem", padding: "16px 32px", background: "#4ade80", color: "#052e12" }}
+            style={{ ...PIXEL_FONT, fontSize: "0.75rem", padding: "16px 32px", background: "#4ade80", color: "#052e12" }}
           >
             ▶ Song abspielen
           </button>
         )}
 
-        <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+        <label style={{ ...PIXEL_FONT, fontSize: "0.6rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
           Lautstärke: {Math.round(volume * 100)}%
           <input
             type="range"
@@ -224,31 +225,31 @@ export function PlaybackView({
             type="button"
             onClick={onFireVote}
             title="Extra-Punkte für diesen Song — einmal pro Runde"
-            style={{ background: "#f97316", color: "#1a0505", fontSize: "1.1rem", padding: "8px 20px" }}
+            style={{ ...PIXEL_FONT, background: "#f97316", color: "#1a0505", fontSize: "0.65rem", padding: "8px 20px" }}
           >
             🔥 Extra-Punkte geben
           </button>
         )}
 
-        {!canVote && <p>Das ist dein eigener Song — kein Voting für dich.</p>}
-        {canVote && hasVoted && !result && <p>Danke für deine Stimme!</p>}
+        {!canVote && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Das ist dein eigener Song — kein Voting für dich.</p>}
+        {canVote && hasVoted && !result && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Danke für deine Stimme!</p>}
         {result && (
           <>
-            <p style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
+            <p style={{ ...PIXEL_FONT, fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
               <ThumbUpIcon size={28} /> {result.upVotes} — <MehIcon size={24} /> {result.neutralVotes} —{" "}
               <ThumbDownIcon size={28} /> {result.downVotes} — 🔥 {result.fireVotes}
             </p>
             {result.upVoterNames && result.upVoterNames.length > 0 && (
-              <p>👍 {result.upVoterNames.join(", ")}</p>
+              <p style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>👍 {result.upVoterNames.join(", ")}</p>
             )}
             {result.neutralVoterNames && result.neutralVoterNames.length > 0 && (
-              <p>😐 {result.neutralVoterNames.join(", ")}</p>
+              <p style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>😐 {result.neutralVoterNames.join(", ")}</p>
             )}
             {result.downVoterNames && result.downVoterNames.length > 0 && (
-              <p>👎 {result.downVoterNames.join(", ")}</p>
+              <p style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>👎 {result.downVoterNames.join(", ")}</p>
             )}
             {result.fireVoterNames && result.fireVoterNames.length > 0 && (
-              <p>🔥 {result.fireVoterNames.join(", ")}</p>
+              <p style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>🔥 {result.fireVoterNames.join(", ")}</p>
             )}
           </>
         )}

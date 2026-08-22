@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MemeMedia } from "./MemeMedia";
 import { PhotoCollageBackground } from "./PhotoCollageBackground";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface CommunityVoteViewProps {
   roundNumber: number;
@@ -46,12 +47,14 @@ export function CommunityVoteView({
     <section id="center">
       <PhotoCollageBackground blurred animated={false} />
       <div className="hud-scale-content">
-        <h1>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.1rem", lineHeight: 1.6 }}>
           Runde {roundNumber} / {totalRounds} — welches Bild?
         </h1>
-        <p>Verbleibende Zeit: {remainingSeconds}s</p>
-        {paused && <p>⏸ Pausiert</p>}
-        {votedIndex !== null && <p>Danke für deine Stimme! Warte auf die anderen…</p>}
+        <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>Verbleibende Zeit: {remainingSeconds}s</p>
+        {paused && <p style={{ ...PIXEL_FONT, fontSize: "0.75rem" }}>⏸ Pausiert</p>}
+        {votedIndex !== null && (
+          <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Danke für deine Stimme! Warte auf die anderen…</p>
+        )}
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           {options.map((url, index) => (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MAX_UPLOADS_PER_PLAYER } from "@meme-tunes/shared";
 import { MemeMedia } from "./MemeMedia";
+import { PIXEL_FONT } from "../pixelFont";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/gif,image/webp,video/mp4,.jpg,.jpeg,.png,.gif,.webp,.mp4";
@@ -55,11 +56,11 @@ export function MemeUploadView({ deadlineTs, paused, onUpload }: MemeUploadViewP
   return (
     <section id="center">
       <div className="hud-scale-content">
-        <h1>Eigene Bilder hinzufügen</h1>
-        <p>Bis zu {MAX_UPLOADS_PER_PLAYER} Bilder in den Pool werfen!</p>
-        <p>Verbleibende Zeit: {remainingSeconds}s</p>
-        {paused && <p>⏸ Pausiert</p>}
-        <p>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "1.2rem", lineHeight: 1.8 }}>Eigene Bilder hinzufügen</h1>
+        <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Bis zu {MAX_UPLOADS_PER_PLAYER} Bilder in den Pool werfen!</p>
+        <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Verbleibende Zeit: {remainingSeconds}s</p>
+        {paused && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>⏸ Pausiert</p>}
+        <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>
           {uploaded.length} / {MAX_UPLOADS_PER_PLAYER} hochgeladen
         </p>
 
@@ -69,11 +70,12 @@ export function MemeUploadView({ deadlineTs, paused, onUpload }: MemeUploadViewP
           accept={ACCEPTED_TYPES}
           onChange={handleFileChange}
           disabled={uploading || reachedMax}
+          style={{ ...PIXEL_FONT, fontSize: "0.55rem" }}
         />
 
-        {uploading && <p>Lädt hoch…</p>}
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        {reachedMax && <p>Maximum erreicht.</p>}
+        {uploading && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Lädt hoch…</p>}
+        {error && <p style={{ ...PIXEL_FONT, fontSize: "0.6rem", color: "crimson" }}>{error}</p>}
+        {reachedMax && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Maximum erreicht.</p>}
 
         {uploaded.length > 0 && (
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>

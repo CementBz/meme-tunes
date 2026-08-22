@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface ExtraTimeBannerProps {
   voteDeadlineTs: number;
@@ -46,17 +47,24 @@ export function ExtraTimeBanner({
         padding: "10px 20px",
         textAlign: "center",
         whiteSpace: "nowrap",
+        ...PIXEL_FONT,
+        fontSize: "0.6rem",
       }}
     >
       <span>
         ⏱️ Mehr Zeit angefordert — {yesVotes}/{eligibleVoters} dafür ({remainingSeconds}s)
       </span>
       {canVote && !hasVoted && (
-        <button type="button" onClick={onVote} className="btn-success" style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
+        <button
+          type="button"
+          onClick={onVote}
+          className="btn-success"
+          style={{ ...PIXEL_FONT, fontSize: "0.55rem", padding: "6px 14px" }}
+        >
           Ja, mehr Zeit geben
         </button>
       )}
-      {canVote && hasVoted && <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Stimme abgegeben ✓</span>}
+      {canVote && hasVoted && <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>Stimme abgegeben ✓</span>}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { PIXEL_FONT } from "../pixelFont";
+
 interface LeaveButtonProps {
   onLeave: () => void;
 }
@@ -20,7 +22,8 @@ export function LeaveButton({ onLeave }: LeaveButtonProps) {
         background: "none",
         boxShadow: "none",
         color: "#ff3b3b",
-        fontWeight: 800,
+        ...PIXEL_FONT,
+        fontSize: "0.6rem",
         zIndex: 1000,
       }}
     >

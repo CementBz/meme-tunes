@@ -14,6 +14,7 @@ import { PreviewTab } from "./PreviewTab";
 import { OwnFilePicker } from "./OwnFilePicker";
 import { socket } from "../socket";
 import { ExtraTimeBanner } from "./ExtraTimeBanner";
+import { PIXEL_FONT } from "../pixelFont";
 
 interface ExtraTimeState {
   voteDeadlineTs: number;
@@ -122,7 +123,7 @@ export function RoundView({
         }}
       />
       <div className="hud-scale-content">
-        <h1 style={{ fontSize: "1.3rem", margin: "4px 0" }}>
+        <h1 style={{ ...PIXEL_FONT, fontSize: "0.85rem", margin: "4px 0" }}>
           Runde {roundNumber} / {totalRounds}
         </h1>
 
@@ -133,25 +134,30 @@ export function RoundView({
           )}
         </div>
 
-        {!submissionsClosed && <p>Verbleibende Zeit: {remainingSeconds}s</p>}
-        {paused && <p>⏸ Pausiert</p>}
+        {!submissionsClosed && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Verbleibende Zeit: {remainingSeconds}s</p>}
+        {paused && <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>⏸ Pausiert</p>}
 
         {canRequestExtraTime && (
-          <button type="button" onClick={onRequestExtraTime} className="pill-badge" style={{ background: "rgba(209, 102, 102, 0.85)", color: "#2b0a0a" }}>
+          <button
+            type="button"
+            onClick={onRequestExtraTime}
+            className="pill-badge"
+            style={{ ...PIXEL_FONT, fontSize: "0.6rem", background: "rgba(209, 102, 102, 0.85)", color: "#2b0a0a" }}
+          >
             ⏱️ +20 Sekunden anfordern
           </button>
         )}
 
         {extraTimeResult !== null && (
-          <p style={{ fontSize: "0.9rem" }}>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.6rem" }}>
             {extraTimeResult ? "✅ Mehrheit dafür — 20 Sekunden extra!" : "❌ Keine Mehrheit — keine Extra-Zeit."}
           </p>
         )}
 
         {submissionsClosed ? (
-          <p>Einreichungen geschlossen – Wiedergabe folgt.</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Einreichungen geschlossen – Wiedergabe folgt.</p>
         ) : hasSubmitted ? (
-          <p>Song eingereicht ✅ Warte auf die anderen Spieler…</p>
+          <p style={{ ...PIXEL_FONT, fontSize: "0.65rem" }}>Song eingereicht ✅ Warte auf die anderen Spieler…</p>
         ) : (
           <div style={{ display: "flex", justifyContent: "center" }}>
             <BrowserWindow

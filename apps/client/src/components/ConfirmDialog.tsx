@@ -1,3 +1,5 @@
+import { PIXEL_FONT } from "../pixelFont";
+
 interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
@@ -32,12 +34,22 @@ export function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogPro
           boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
         }}
       >
-        <p style={{ color: "#1d1d1f", margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>{message}</p>
+        <p style={{ ...PIXEL_FONT, color: "#1d1d1f", margin: 0, fontSize: "0.7rem", lineHeight: 1.8 }}>{message}</p>
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-          <button type="button" className="apple-pill" style={{ background: "#0071e3", color: "#fff" }} onClick={onConfirm}>
+          <button
+            type="button"
+            className="apple-pill"
+            style={{ ...PIXEL_FONT, fontSize: "0.6rem", background: "#0071e3", color: "#fff" }}
+            onClick={onConfirm}
+          >
             Ja
           </button>
-          <button type="button" className="apple-pill" style={{ background: "#f2f2f7", color: "#1d1d1f" }} onClick={onCancel}>
+          <button
+            type="button"
+            className="apple-pill"
+            style={{ ...PIXEL_FONT, fontSize: "0.6rem", background: "#f2f2f7", color: "#1d1d1f" }}
+            onClick={onCancel}
+          >
             Abbrechen
           </button>
         </div>
